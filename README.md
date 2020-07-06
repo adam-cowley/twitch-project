@@ -21,7 +21,7 @@ If you're subscribed to this channel then you are likely familiar with Neo4j, bu
 
 What sets Neo4j apart from other databases is it's ability to query connected datasets.  Where traditional databases build up joins between records at read time, Neo4j stores the data
 
-Neo4j is schema-optional - meaning that you can enforce a schema on your database but
+Neo4j is schema-optional - meaning that you can enforce a schema on your database if necessary by adding unique or exists constraints on Nodes and Relationships.
 
 ### Typescript
 
@@ -62,7 +62,7 @@ In the generated `src/` folder, you'll see:
 
 ### Nest modules
 
-Functionality in Nest is grouped into *modules*, the [official documentation uses Cats](https://docs.nestjs.com/modules) as it's example.  Modules are a way of grouping related functionality together. In the Cats example, the module *provides* a CatsService which handles the applications interactions with Cats, and a Cats controller which registers routes which define how the Cats are accessed.
+Functionality in Nest is grouped into *modules*, the [official documentation uses Cats](https://docs.nestjs.com/modules) as its example.  Modules are a way of grouping related functionality together. In the Cats example, the module *provides* a CatsService which handles the applications interactions with Cats, and a Cats controller which registers routes which define how the Cats are accessed.
 
 Module classes are defined by a `@Module` annotation, which in turn defines which child modules are imported into module, any controllers that are defined in the module, and any classes that are exported from the module and made available for dependency injection.
 
@@ -80,7 +80,7 @@ The CatService is registered with the Nest instance and can then be *injected* i
 
 ### `@Injectable()` classes
 
-Classes annoted with `@Injectable()` are automatically injected into a class using some under-the-hood Nest "magic".  For example, by defining the `CatsService` in the constructor for the `CatsController`, Nest will automatically resolve this dependency and inject it to the class without any additional code.
+Classes annotated with `@Injectable()` are automatically injected into a class using some under-the-hood Nest "magic".  For example, by defining the `CatsService` in the constructor for the `CatsController`, Nest will automatically resolve this dependency and inject it to the class without any additional code.
 
 This is identical to how things work in more mature frameworks like [Spring](https://spring.io) and [Laravel](https://laravel.io).
 
@@ -113,7 +113,7 @@ Then, we can use CLI to generate a new module with the name Neo4j.
 nest g mo neo4j # shorthand for `nest generate module neo4j`
 ```
 
-The command will create a `neo4j/` folder with it's own module.  Next, we can use the CLI to generate the Service:
+The command will create a `neo4j/` folder with its own module.  Next, we can use the CLI to generate the Service:
 
 ```sh
 nest g s neo4j # shorthand for `nest generate service neo4j`
@@ -123,7 +123,7 @@ This command will generate `neo4j.service.ts` and append it to the `providers` a
 
 #### Configuration & Dynamic Modules
 
-By default, these modules are registerd as static modules.  In order to add configuration to the driver, we'll have add a static method which accepts the user's Neo4j credentials and returns a `DynamicModule`.
+By default, these modules are registered as static modules.  In order to add configuration to the driver, we'll have add a static method which accepts the user's Neo4j credentials and returns a `DynamicModule`.
 
 The first thing to do is generate an interface that will define the details allowed when instantiating the module.
 
@@ -197,8 +197,7 @@ export class Neo4jModule {
 }
 ```
 
-If the user supplies incorrect credentials, we don't want the application to start.  We can create an instance of the Driver and verify the connectivity using an [Asynchronous provider](https://docs.nestjs.com/fundamentals/async-providers).  An async provider is basically a function that return
-.
+If the user supplies incorrect credentials, we don't want the application to start.  We can create an instance of the Driver and verify the connectivity using an [Asynchronous provider](https://docs.nestjs.com/fundamentals/async-providers).  An async provider is basically a function that given a set of configuration parameters, returns an instance of the module that is configured at runtime.
 
 In a new file `neo4j.utils.ts`, create an `async` function to create an instance of the driver and call the `verifyConnectivity()` to verify that the connection has been successful.  If this function throws an Error, the application will not start.
 
@@ -349,5 +348,5 @@ async getHello(): Promise<any> {
   }
 ```
 
-Navigating in the browser to http://localhost:3000 ahould now show a message including the number of nodes in the database.
+Navigating in the browser to http://localhost:3000 should now show a message including the number of nodes in the database.
 
