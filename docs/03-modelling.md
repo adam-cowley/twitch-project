@@ -5,7 +5,7 @@ We will be building a new site for the fictional client **Neoflix**.
 > Neoflix is a video streaming service that allows users to buy monthly subscriptions for Films and TV Shows.  Users can purchase many packages that provide access to curated lists of content.  All content is categorised by type, language and genre.
 
 
-One of the simplest and most common sense approaches is to extract Nouns and Verbs from your problem statement or user stories.  This ensures that the data model makes sense to anyone coming at your project for the first time.  My favourite presentation on the subject is [Decyphering Your Graph Model](https://neo4j.com/blog/decyphering-your-graph-model/) by [Dom Davis](https://twitter.com/idomdavis).
+One of the simplest and most common sense approaches is to extract Nouns and Verbs from your problem statement or user stories.  This ensures that the data model makes sense to anyone coming at your project for the first time.  My favourite presentation on the subject is [Decyphering Your Graph Model](https://neo4j.com/blog/decyphering-your-graph-model/) by [Dom Davis](https://twitter.com/idomdavis) from [Graph Connect](https://www.graphconnect.com), London in 2017.
 
 By using this method, you ensure that you are using.  In my experience it's a good place to start, and if anything doesn't make sense further into the project it is really easy to refactor the model.
 

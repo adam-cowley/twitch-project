@@ -12,7 +12,7 @@
 
 ## Tech Stack
 
-See [Tech Stack](./docs/tech-stack.md)
+See [Tech Stack](./docs/00-tech-stack.md)
 
 
 ## Sessions
