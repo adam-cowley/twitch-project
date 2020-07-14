@@ -904,7 +904,7 @@ This was a lengthy session but we've covered a lot of ground.  We've:
 - Created an Auth Controller with routes for registering and signing in.
 - Added end-to-end tests to ensure that User Registration and Authentication flow works as expected
 
-Next week we will look at **Authorisation** - ensuring that the User can do what they are trying to
+Next week we will look at **Authorisation** - ensuring that the User can do what they are trying to.
 
 
 ### Further Reading:

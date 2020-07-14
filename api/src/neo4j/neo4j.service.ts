@@ -1,10 +1,10 @@
 import neo4j, { Result, Driver } from 'neo4j-driver'
-import { Injectable, Inject } from '@nestjs/common';
-import { Neo4jConfig } from 'src/neo4j/neo4j-config.interface';
+import { Injectable, Inject, OnApplicationShutdown } from '@nestjs/common';
+import { Neo4jConfig } from './neo4j-config.interface';
 import { NEO4J_CONFIG, NEO4J_DRIVER } from './neo4j.constants';
 
 @Injectable()
-export class Neo4jService {
+export class Neo4jService implements OnApplicationShutdown {
 
     constructor(
         @Inject(NEO4J_CONFIG) private readonly config: Neo4jConfig,
@@ -33,14 +33,18 @@ export class Neo4jService {
         })
     }
 
-    read(cypher: string, params: Record<string, any>, database?: string): Result {
+    read(cypher: string, params?: Record<string, any>, database?: string): Result {
         const session = this.getReadSession(database)
         return session.run(cypher, params)
     }
 
-    write(cypher: string, params: Record<string, any>, database?: string): Result {
+    write(cypher: string, params?: Record<string, any>, database?: string): Result {
         const session = this.getWriteSession(database)
         return session.run(cypher, params)
+    }
+
+    onApplicationShutdown() {
+        return this.driver.close()
     }
 
 }
