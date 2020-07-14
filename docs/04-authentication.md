@@ -76,7 +76,6 @@ We'll add some validation on the date to ensure that the the user is at least 13
 The `create-user.dto.ts` should look something like this:
 
 ```sh
-import moment from 'moment'
 import { Type } from 'class-transformer'
 import { IsEmail, IsNotEmpty, IsDate, MaxDate } from 'class-validator';
 
@@ -107,6 +106,7 @@ The `@Type` decorator from 'class-transformer' will take the value and transform
 Next, the route in `auth.controller.ts`.  Any routes in the auth controller are prefixed with `auth/` as defined in the `@Controller` decorator, so to create a REST endpoint for a POST request to /auth/register, we can create the `@Post` decorator.
 
 ```ts
+// auth.controller.ts
 import { Controller, Post, Body } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
@@ -146,9 +146,9 @@ Ahh, dependency injection, our old friend.  Nest doesn't recognise `UserService`
    import { UserModule } from '../user/user.module';
 
     @Module({
-    imports: [UserModule],
-    providers: [AuthService],
-    controllers: [AuthController]
+      imports: [UserModule],
+      providers: [AuthService],
+      controllers: [AuthController]
     })
     export class AuthModule {}
    ```
@@ -156,8 +156,8 @@ Ahh, dependency injection, our old friend.  Nest doesn't recognise `UserService`
     ```ts
     import { UserService } from './user.service';
     @Module({
-    providers: [UserService],
-    exports: [UserService],
+      providers: [UserService],
+      exports: [UserService],
     })
     export class UserModule {}
     ```
@@ -247,7 +247,53 @@ The first thing it should do is validate the response based on the decorators in
   })
 ```
 
-If there is a valid request, the API should return a `HTTP 201 Created` status with the User's information.
+Right now the test will fail:
+
+```
+> api@0.0.1 test:e2e /Users/adam/projects/twitch/api
+> jest --config ./test/jest-e2e.json
+
+ FAIL  test/app.e2e-spec.ts
+  AppController (e2e)
+    Auth
+      POST /auth/register
+        ✕ should validate request (203 ms)
+
+  ● AppController (e2e) › Auth › POST /auth/register › should validate request
+
+    expected 400 "Bad Request", got 201 "Created"
+
+Ran all test suites.
+Jest did not exit one second after the test run has completed.
+
+This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.
+
+```
+
+This is because we've not yet registered the `ValidationPipe` to the thest application.  We'll have to add this line using the `useGlobalPipes` function as we did in `main.ts`.
+
+```ts
+beforeEach(async () => {
+  const moduleFixture: TestingModule = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
+
+  app = moduleFixture.createNestApplication();
+  // Use Validation Pipe
+  app.useGlobalPipes(new ValidationPipe());
+  await app.init();
+});
+```
+
+The warning at the bottom of the screen also needs fixing: `Jest did not exit one second after the test run has completed.`
+
+To fix this, we'll have to close the app.  I think this is due to the Neo4j driver not being closed properly.  Calling `app.close()` after all of the tests have run will call the 'onApplicationShutdown` on the `Neo4jService` to close the thread that the driver is running on.
+
+```ts
+afterAll(() => app.close())
+```
+
+For the next test, the API should return a `HTTP 201 Created` status with the User's information if the user supplies the correct information.
 
 ```ts
 it('should return a JWT token on successful registration', () => {
@@ -275,6 +321,7 @@ Now, to persist the data.  The AuthController shouldn't hold any logic as to how
 For now, we don't have any entities in the code, so we can define the `User` type as a Node from `neo4j-driver`.
 
 ```ts
+// user.service.ts
 import { Node } from 'neo4j-driver';
 
 export type User = Node;
@@ -284,7 +331,7 @@ Then, the `create` method will take named parameters so that we can reflect the 
 ```ts
 import { Injectable } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
-import { Date as Neo4jDate, Node } from 'neo4j-driver';
+import { Node, types } from 'neo4j-driver';
 
 @Injectable()
 export class UserService {
@@ -298,7 +345,7 @@ export class UserService {
         password,
         firstName,
         lastName,
-        dateOfBirth: Neo4jDate.fromStandardDate(dateOfBirth)
+        dateOfBirth: types.Date.fromStandardDate(dateOfBirth),
       }
     })
 
@@ -332,7 +379,7 @@ export class EncryptionService {
     constructor(private readonly config: ConfigService) {}
 
     async hash(plain: string): Promise<string> {
-        return this.config.get<number>('HASH_ROUNDS', 10))
+        return hash(plain, this.config.get<number>('HASH_ROUNDS', 10))
     }
 
     async compare(plain: string, encrypted: string): Promise<boolean> {
@@ -359,7 +406,7 @@ export class EncryptionModule {}
 The `EncryptionModule` can then be added as an import to the `UserModule`:
 
 ```ts
-# user.module.ts
+// user.module.ts
 import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { EncryptionModule } from '../encryption/encryption.module';
@@ -375,7 +422,7 @@ export class UserModule {}
 ...and injected into the UserService to hash the password.
 
 ```ts
-# user.service.ts
+// user.service.ts
 export class UserService {
 
     constructor(
@@ -402,11 +449,12 @@ export class UserService {
 Next, the `AuthModule` needs to be updated to import the `UserModule`:
 
 ```ts
+// auth.controller.t
 import { EncryptionService } from './encryption/encryption.service';
 
 @Module({
   imports: [UserModule],
-  providers: [AuthService, EncryptionService],
+  providers: [AuthService],
   controllers: [AuthController]
 })
 export class AuthModule {}
@@ -415,7 +463,7 @@ export class AuthModule {}
 Then, the `UserService` can be injected and used in the `AuthController`:
 
 ```ts
-# auth.controller.ts
+// auth.controller.ts
 constructor(private readonly userService: UserService) {}
 
 @Post('register')
@@ -475,10 +523,39 @@ To log in, a user will have to send a `POST` request to `/auth/login` with their
 So, the first thing to do is to create a route handler in the `AuthController`:
 
 ```ts
-# auth.controller.ts
+// auth.controller.ts
 @Post('login')
 async postLogin(@Request() request: Request) {
   // ...
+}
+```
+
+#### Validating Users
+
+Next, to implement the `validateUser` method in `AuthService`.  This should accept a username and plaintext password, find the User by it's email address (with the help of the `UserService`) and then use the `EncryptionService` to check the password.  If everything is fine, then it should return the User but otherwise return null.
+
+```ts
+// auth.service.ts
+ssync validateUser(email: string, password: string) {
+    const user = await this.userService.findByEmail(email)
+
+    if ( user && this.encryptionService.compare(password, (user.properties as Record<string, any>).password) ) {
+        return user
+    }
+
+    return null
+}
+```
+
+**NB:** We should probably create an interface for a User's properties at some point.
+
+Then, in the `UserService`, we need to create a method that will query Neo4j for a User with that email:
+
+```ts
+async findByEmail(email: string): Promise<User | undefined> {
+  const res = await this.neo4jService.read(`MATCH (u:User {email: $email}) RETURN u`, { email })
+
+  return res.records.length ? res.records[0].get('u') : undefined;
 }
 ```
 
@@ -489,9 +566,6 @@ We can implement Passport into Nest using the `@nestjs/passport` plugin.
 <!-- `@nestjs/passport` is a utility library which includes handy clases for implementing [Guard](https://docs.nestjs.com/guards). -->
 
 Alongisde Passport, we will use [Passport Local](http://www.passportjs.org/packages/passport-local/), an out-of-the-box add-on for Passport that allows you to perform basic authenticating using a Uername and Password.
-
-To implement this into Nest, we can use the .  We can create a class extending the `PassportStrategy` or extend a number of built in.  In this session, we'll be using the
-
 
 #### Installing Dependencies
 
@@ -504,12 +578,14 @@ npm i --save-dev @types/passport-local
 
 To implement a local strategy, we can extend the `PassportStrategy` from the package and register it as a provider in the `AuthModule`.
 
-
 For the local-strategy, Passport expects a validate() method with the following signature: `validate(username: string, password:string): any`.  The strategy will be `@Injectable` so we can use it in any modules that import the `AuthModule`.  Inside the auth folder, create a new file called `local.strategy.ts`:
 
+```sh
+touch src/auth/local.strategy.ts
+```
 
 ```ts
-# local.strategy.ts
+// local.strategy.ts
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -544,10 +620,10 @@ The `validate` method on this class calls the `validateUser` method on the injec
 ```
 This will change the signature of the validate method to be: `validate(request: Request, username: string, password: string)`. -->
 
-Then, we need to register it as a provider in the AuthModule.
+Then, we need to register it as a provider in the AuthModule so that it can be used within the module.
 
 ```ts
-# auth.module.ts
+// auth.module.ts
 import { LocalStrategy } from './local.strategy'
 
 @Module({
@@ -558,46 +634,16 @@ import { LocalStrategy } from './local.strategy'
 export class AuthModule {}
 ```
 
-
-#### Validating Users
-
-Next, to implement the `validateUser` method in `AuthService`.  This should accept a username and plaintext password, find the User by it's email address (with the help of the `UserService`) and then use the `EncryptionService` to check the password.  If everything is fine, then it should return the User but otherwise return null.
-
-```ts
-# auth.service.ts
-async validateUser(email: string, password: string) {
-    const user = await this.userService.findByEmail(email)
-
-    if ( user && this.encryptionService.compare(password, (user.properties as Record<string, any>).password) ) {
-        return user
-    }
-
-    return null
-}
-```
-
-**NB:** We should probably create an interface for a User's properties at some point.
-
-Then, in the `UserService`, we need to create a method that will query Neo4j for a User with that email:
-
-```ts
-async findByEmail(email: string): Promise<User | undefined> {
-  const res = await this.neo4jService.read(`MATCH (u:User {email: $email}) RETURN u`, { email })
-
-  return res.records.length ? res.records[0].get('u') : undefined;
-}
-```
-
 #### Adding a Route Guard
 
-To use the strategy above, we'll need to create a class that extends `AuthGuard` - a class provided by `@nestjs/passport`.  The AuthGard will "[Guard](https://docs.nestjs.com/guards)" the route - automatically instantiating the `LocalStrategy`, extracting the user's information and calling the validate method.  If the credentials are correct, it will add a `user` item to the `Request` object, otherwise it will throw the UnauthorizedException which will be caught further down the stack.
+To use the strategy above, we'll need to create a class that extends `AuthGuard` - a class provided by `@nestjs/passport`.   Before a request hits the route handler function, Nest will pass the request through a pipeline of [Guard](https://docs.nestjs.com/guards) which have the responsibility of validating the request and throwing an error if anything goes wrong.  In this case, the AuthGuard will extract he user's credentials from the request and then pass it to an instance of the `LocalStrategy` class.  If the credentials are correct, it will add a `user` item to the `Request` object with whatever is returned from the `validate` method, otherwise it will throw the UnauthorizedException which will dealt with further down the stack.
 
 ```sh
 touch src/auth/local-auth.guard.ts
 ```
 
 ```ts
-# local-auth.guard.ts
+// local-auth.guard.ts
 import { AuthGuard } from "@nestjs/passport";
 import { Injectable } from "@nestjs/common";
 
@@ -605,17 +651,19 @@ import { Injectable } from "@nestjs/common";
 export class LocalAuthGuard extends AuthGuard('local') {}
 ```
 
-If we add this guard to the login route handler, it will run before this route is executed and append the `user`.
+
+We can then tell Nest to use the `LocalAuthGuard` to _guard_ the request.  If all goes well, the guard will set `request.user` to be the user's information.  If there is a problem with the user's credentials then the code in the route handler will never be touched.
 
 ```ts
+// auth.controller
 @UseGuards(AuthGuard('local'))
 @Post('login')
 async postLogin(@Request() request) {
-    return request.user
+    return request.user.properties
 }
 ```
 
-But this still isn't returning a JWT token.  To do that, we will need `passport-jwt`.  Similar to `passport-local`, is a strategy for autenticating users, but instead of using Username and password, it will check a [token](https://jwt.io) provided in the `Authorization` header.
+This will now return the user's properties, including their password which isn't ideal.  Instead, we should be returning a JWT token.  To do that, we will need `passport-jwt`.  Similar to `passport-local`, is a strategy for autenticating users, but instead of using Username and password, it will check a [token](https://jwt.io) provided in the `Authorization` header.
 
 A JWT is a Base 64 encoded string which contains 3 pieces of information:
 - A header containing the type of token and the algorithm used to sign it
@@ -648,7 +696,7 @@ JWT_EXPIRES_IN=30d
 Then, like the `Neo4jModule`, we can register a dynamic JWT module using the `registerAsync` function - providing a `useFactory` function to return the `JwtModule` configuration.
 
 ```ts
-// ...
+// auth.module.ts
 import { JwtModule } from '@nestjs/jwt'
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -794,7 +842,7 @@ export class AuthController {
 
     // ...
 
-        @Post('register')
+    @Post('register')
     async postRegister(@Body() createUserDto: CreateUserDto) {
         const user = await this.userService.create(
             createUserDto.email,
@@ -877,7 +925,7 @@ describe('POST /auth/login', () => {
 })
 ```
 
-Then, finally, given the token provided above, does it successfully identify the user and do the details returned form the API match the original details the user registered with?
+Given the token provided above, does it successfully identify the user and do the details returned form the API match the original details the user registered with?
 
 ```ts
 // app-e2e.spec.ts
@@ -892,6 +940,39 @@ describe('GET /auth/user', () => {
       })
   })
 })
+```
+
+Additionally, we'll also want to test that the user won't have access to any route with this guard if they either don't have a token or supply an invalid token.
+
+```ts
+// app-e2e.spec.ts
+it('should return error if no JWT supplied', () => {
+  return request(app.getHttpServer())
+    .get('/auth/user')
+    .expect(401)
+})
+
+it('should return error if incorrect JWT supplied', () => {
+  return request(app.getHttpServer())
+    .get('/auth/user')
+    .set('Authorization', `Bearer ${token.replace(/[0-9]+/g, 'X')}`)
+    .expect(401)
+})
+```
+
+In the code `token.replace(/[0-9]+/g, 'X')` I'm replacing all numbers with an `X` - this mimics the behaviour of a would-be hacker who may try to change the payload of the token.  `passport-jwt` will generate a signature for the payload using the secret key from our `.env` file and compare it against the signature passed with the payload.
+
+Then, finally to clean up the database, we can add an `afterAll` hook to delete the user after all of the tests in Auth have run.
+
+```ts
+describe('Auth', () => {
+  const email = `${Math.random()}@adamcowley.co.uk`
+  const password = Math.random().toString()
+  let token
+
+  afterAll(() => app.get(Neo4jService).write('MATCH (n:User {email: $email}) DETACH DELETE n', { email }))
+  // ...
+}
 ```
 
 

@@ -22,4 +22,4 @@ See [Tech Stack](./docs/00-tech-stack.md)
   - [Dynamic Neo4j Configuration](./docs/02-dynamic-configuration.md)
   - [Data Modelling](./docs/03-modelling.md)
   - [Data Import](../data/README.md)
-
+- [Week 3 - Authorisation (Registration, Login, JWT tokens)](./docs/03-modelling.md)
