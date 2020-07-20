@@ -1,12 +1,58 @@
 # Authentication
 
-Authentication is a key part of any subscription or SaaS site.  For every request, we should be able to verify who the user is and whether they have the correct subscription to do what they are trying to do.  As such, API calls to view or stream content will require a valid token.
+Authentication is a key part of any subscription or SaaS site.  For every request, we should be able to verify who the user is and whether they have the correct subscription to do what they are trying to do.  As such, API calls to view or stream any content via the API will require valid user credentials.  To enforce this, we will use a combination of [Nest.js Guards](https://docs.nestjs.com/guards) and [JWT](https://jwt.io/) tokens.
 
-Nest.js comes with a built in module for [Passport][https://github.com/jaredhanson/passport], a widely used library for authenticating users.  We will be usng it to validate each request, generate [JWT](https://jwt.io/) tokens during the login process, and verify those tokens in subsequent requests.
+To provide Authentication we will need REST endpoints to allow users to create an account and then to log in with those credentials.  We will be using a combination of Email address and Password as the method for authentication so that the user doesn't need to supply an email address and a username.
 
-## Adding Authenticatin to Nest
 
-To follow the examples in nest, we should create an Authentication Service which will handle the authentication, a controller to accept a login request, and then a module to register the components with the main application.
+## JWTs
+
+JWT's (pronounced JOT) - short for JSON Web Tokens - are compact tokens - backed by an [open standard (RFC 7519)](https://tools.ietf.org/html/rfc7519) - that are designed to provide a secure way of transmitting information between parties - or in our case sharing user authentication information between the API and front end.
+
+On the surface, a JWT token could look a little like this:
+
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+```
+
+This is a base64 encoded string which contains three pieces of information, split by a dot.
+
+### The Header
+
+When decoded, the header will contain information about the type of token and the algorithm that has been used to sign the token.
+```json
+
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+
+### The Payload
+
+The token's payload is a base64 encoded JSON object contains certain *claims* about the User, for example information about who they are. Although there are some reserved claims (for example the *issuer* or `iss`, *subject* or `sub` and *expiry* or `exp`), any information can be added to the payload. It is worth remembering that the payload of a JWT token can be easily decoded, so this shouldn't contain any sensitive information about the user.  In our case, we will add some basic information about the User into the token so that the UI can be customised without making unneccesary requests to the API.
+
+```json
+{
+  "iss": "our-api",
+  "sub": "user-1234",
+  "exp": 1595245369
+}
+```
+
+In the example above, the token has been issued by `our-api` for `user-1234` with an expiry time of `1595245369` - seconds since epoch.
+
+
+### The Signature
+
+The signature ensures that the information held in the payload has not been tampered with.  After base64 encoding the payload, a signature is generated using a secret passphrase or PEM key.  When the key is read, the signature is regenerated and checked against the value provided.  If the two signatures do not match then the token is rejected.  This ensures that as long as no one knows the key used to sign the original token, the contents will always be valid.
+
+
+## Adding Authentication to Nest
+
+Nest.js comes with a built in module for [Passport](https://github.com/jaredhanson/passport), a widely used library for authenticating users.  We will be using it to validate each request, generate [JWT](https://jwt.io/) tokens during the login process, and verify those tokens in subsequent requests.
+
+To follow the conventions set out by Nest, we should create an Authentication Service which will handle the authentication, a controller to accept a login request, and then a module to register the components with the main application.
 
 ```sh
 nest g mo auth
@@ -14,26 +60,31 @@ nest g s auth
 nest g co auth
 ```
 
-The Auth Service shouldn't be tasked with querying the user information, so we should also create a Users module and Service to get the user from the database.  Doing things this way means that if we need this functionality anywhere else in the application, we can just inject the service in and use the method rather than duplicating code.
-
+The Auth Service shouldn't be tasked with querying the user information, so we should also create a User Module and Service to handle communication with the database.  This has the added benefit of allowing us to share this functionality across the application rather than duplicating the code - meaning we adhere to the principles of DRY (Don't Repeat Yourself).  If we want to create or find a User, we can just inject the User Service into a class.
 
 ```sh
 nest g mo user
 nest g s user
 ```
 
-In our case, the user's will be identified their email address and password, so before we write any code we should create a contraint in Neo4j:
+### Ensuring Emails are Unique
+
+Because users will be authenticating with their email address, we need to make sure that an email address is unique.  We could add a check as part of the validation stage to check if the username exists but this would double the number of requests required and also add network latency to the request time.
+
+Instead, we can add a constraint to the database to ensure that the `email` property is unique for any node with a `:User` label.  To do this, we can run a `CREATE CONSTRAINT` statement in Neo4j:
 
 ```cypher
 CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE
 ```
+
+Now if the user passes all other validation required by the application layer, the database will throw a `ClientException` which we can catch in the API.
 
 
 ### Registering as a User - `POST /auth/register`
 
 Before we can authenticate a User, it has to exist in the database.  So the first thing to do would be to create an endpoint to allow a User to create an account.
 
-We'll need to create a [DTO](https://docs.nestjs.com/controllers#request-payloads) (Data Transfer Object) to represent the payload that the function should receive.  By using the `@Body()` decorator, Nest will coerce the request body into the class.
+We'll need to create a [DTO](https://docs.nestjs.com/controllers#request-payloads) (Data Transfer Object) to represent the payload that the function should receive.  By using the `@Body()` decorator, Nest will coerce the request body into the class that has been type-hinted by the route handler.
 
 The root folder of the module is getting a little crowded already, so I personally prefer to create a `dto/` folder to hold the DTO classes.
 
@@ -42,11 +93,9 @@ mkdir src/user/dto
 touch src/user/dto/create-user.dto.ts
 ```
 
-An added benefit of DTO's is that if we add decorators to the properties, Nest will automatically validate the request and reject any requests that don't meet the requirements that have been set out.
+An added benefit of DTO's is that if we add decorators to the properties, Nest will automatically validate the request and reject any requests that don't meet the requirements that have been set out.  `@nest/core` comes with a [ValidationPipe](https://docs.nestjs.com/techniques/validation) that we'll need to register as a Global Pipe in the `bootstrap` function in `main.ts`.
 
-`@nest/core` comes with a [ValidationPipe](https://docs.nestjs.com/techniques/validation) that we'll need to register with the app.
-
-[Pipes](https://docs.nestjs.com/pipes) are injectable classes that either transform or validate inputs into the aplication. - For example, the `ParseIntPipe` can be used to transform a URL parameter into a `number` type.
+[Pipes](https://docs.nestjs.com/pipes) are injectable classes that either transform or validate inputs into the application. - For example, the `ParseIntPipe` can be used to transform a URL parameter into a `number` type.
 
 The ValidationPipe uses the `class-validator` and `class-transformer` packages so we'll have to install those:
 
@@ -70,7 +119,7 @@ bootstrap();
 
 For a User to register, we'll need an email address and password.  Then to personalise their service a name, and date of birth will be useful for controlling.  The user's date of birth will be also required to ensure that a User can access the content they've requested.
 
-We'll add some validation on the date to ensure that the the user is at least 13 years old in accodance with UK law.  To do this, we can use the `moment` package - `npm i moment` and subtract 13 years.
+We'll add some validation on the date to ensure that the the user is at least 13 years old in accordance with UK law.  To do this, we can use the `moment` package - `npm i moment` and subtract 13 years.
 
 
 The `create-user.dto.ts` should look something like this:
@@ -100,8 +149,7 @@ export class CreateUserDto {
 
 The `@Type` decorator from 'class-transformer' will take the value and transform it into a `Date`.
 
-
-**Note:** At the time of writing, moment wasn't playing well with typescript.  After a quick google, I found that adding `"esModuleInterop": true,` to `compilerOptions` in `tsconfig.json` seemed to do the trick.
+**Note:** At the time of writing, the `moment` library wasn't playing well with typescript imports.  After a quick google, I found that adding `"esModuleInterop": true,` to `compilerOptions` in `tsconfig.json` seemed to do the trick.
 
 Next, the route in `auth.controller.ts`.  Any routes in the auth controller are prefixed with `auth/` as defined in the `@Controller` decorator, so to create a REST endpoint for a POST request to /auth/register, we can create the `@Post` decorator.
 
@@ -125,6 +173,7 @@ export class AuthController {
 }
 ```
 
+#### Nest can't resolve dependencies of ???
 
 If you're running the code in dev mode, you'll now see something along the lines of:
 
@@ -162,9 +211,11 @@ Ahh, dependency injection, our old friend.  Nest doesn't recognise `UserService`
     export class UserModule {}
     ```
 
-There's nothing like a live coding disaster to cement an idea into your head.
+_There's nothing like a live coding disaster to cement an idea into your head._
 
-To verify this is working, we could write a cURL request or open up postman.  But instead, let's look at writing a test.  So far we've not looked at tests, but you may have noticed that when we ran the `nest g co auth` command, a `auth.controller.spec.ts` file was also generated.
+### Testing the Endpoint
+
+To verify this is working, we could write a cURL request or open up [Postman](https://www.postman.com/).  But instead, let's look at writing a test.  So far we've not looked at tests, but you may have noticed that when we ran the `nest g co auth` command, an `auth.controller.spec.ts` file was also generated.
 
 If we run the following command, the `jest` rest runner will run in watch mode.  This is really useful for development because the test runner will watch for changes to files and automatically re-run tests.  So if a change in one file breaks another, you'll know instantly.
 
@@ -270,9 +321,10 @@ This usually means that there are asynchronous operations that weren't stopped i
 
 ```
 
-This is because we've not yet registered the `ValidationPipe` to the thest application.  We'll have to add this line using the `useGlobalPipes` function as we did in `main.ts`.
+This is because we've not yet registered the `ValidationPipe` to the the test application used within the test.  We'll have to add this line using the `useGlobalPipes` function as we did in `main.ts`:
 
 ```ts
+// app.e2e-spec.ts
 beforeEach(async () => {
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
@@ -285,11 +337,17 @@ beforeEach(async () => {
 });
 ```
 
-The warning at the bottom of the screen also needs fixing: `Jest did not exit one second after the test run has completed.`
+Now an error appear at the bottom of the test complaining that:
 
-To fix this, we'll have to close the app.  I think this is due to the Neo4j driver not being closed properly.  Calling `app.close()` after all of the tests have run will call the 'onApplicationShutdown` on the `Neo4jService` to close the thread that the driver is running on.
+```
+Jest did not exit one second after the test run has completed.
+```
+
+This is occurring because the Neo4j Driver instance is left open, and therefore the Nest application doesn't exist within the second window that Jest expects.  To fix this, we'll have to call the `close` method on the app.  Calling `app.close()` after all of the tests have run will call the `onApplicationShutdown` method on the `Neo4jService` to  be called, closing any sessions that are still left open.
+
 
 ```ts
+// app.e2e-spec.ts
 afterAll(() => app.close())
 ```
 
@@ -315,8 +373,9 @@ it('should return a JWT token on successful registration', () => {
 })
 ```
 
-Now, to persist the data.  The AuthController shouldn't hold any logic as to how a User is created, so this responsibility should be passed on to another class - in this case we'll use the `UserService` generated earlier.  So, in `src/users/user.service.ts`, we should create a new method for creating a User.
+### Persisting the Data
 
+The tests now pass, but nothing is happening.  We next need to persist the data in the database.  The AuthController shouldn't hold any logic as to how a User is created, so this responsibility should be passed on to another class - in this case we'll use the `UserService` generated earlier.  So, in `src/users/user.service.ts`, we should create a new method for creating a User.
 
 For now, we don't have any entities in the code, so we can define the `User` type as a Node from `neo4j-driver`.
 
@@ -329,9 +388,12 @@ export type User = Node;
 Then, the `create` method will take named parameters so that we can reflect the business logic  defined in the `CreateUserDto` (email, password and dateOfBirth are required but the first and last name are optional), then pass on a cypher `CREATE` query to the `Neo4jService`.
 
 ```ts
+// user.service.ts
 import { Injectable } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { Node, types } from 'neo4j-driver';
+
+export type User = Node;
 
 @Injectable()
 export class UserService {
@@ -355,21 +417,23 @@ export class UserService {
 
 ```
 
-It's a really bad idea to store plain text passwords in the database, so we'll install `bcrypt`:
+It's a really bad idea to store plain text passwords in the database, so we'll install the `bcrypt` library which will encrypt the plain passwords when an account is created and also check the plain text password against the encrypted value stored in the database.
 
 ```sh
 npm i --save bcrypt
 ```
 
-and create a new encryption service which will be responsible for encrypting and comparing passwords.
+Next, we'll need to create a new encryption service which will be responsible for encrypting and comparing passwords.
 
 ```sh
 nest g mo encryption
 nest g s encryption
 ```
 
+The service should offer two functions, one to hash a plain text password and another to compare the password that the user has entered against the hashed valued stored in the database.
+
 ```ts
-# encryption.service.ts
+// encryption.service.ts
 import { hash, compare } from 'bcrypt'
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -388,12 +452,13 @@ export class EncryptionService {
 }
 ```
 
-**Note:**  Here we're using the ConfigService which was previously registered as a global module inside `app.module.ts`.
+**Note:**  Here we're using the `ConfigService` which was previously registered as a global module inside `app.module.ts` to get the `HASH_ROUNDS` config value from our environment variables.
 
-In order to inject this into other services, this will need to be added to the `exports` array of the EncryptionModule.
+
+In order to inject the `EncryptionService` into other services, this will need to be added to the `exports` array of the `EncryptionModule`.
 
 ```ts
-# encryption.module.ts
+// encryption.module.ts
 import { EncryptionService } from './encryption.service';
 
 @Module({
@@ -419,7 +484,8 @@ import { EncryptionModule } from '../encryption/encryption.module';
 export class UserModule {}
 
 ```
-...and injected into the UserService to hash the password.
+
+...and subsequently injected into the UserService to hash the password.
 
 ```ts
 // user.service.ts
@@ -502,7 +568,7 @@ Time:        3.338 s, estimated 4 s
 Ran all test suites.
 ```
 
-A quick query in `cypher-shell` should show that the user record has been created with a hashed password:
+A quick query in `cypher-shell` should show that the `:User` Node has been created with a hashed password:
 
 ```
 neo4j@neo4j> MATCH (u:User) WHERE exists(u.email) RETURN u.id, u.email, u.password, u.dateOfBirth;
@@ -513,12 +579,11 @@ neo4j@neo4j> MATCH (u:User) WHERE exists(u.email) RETURN u.id, u.email, u.passwo
 +-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
 
-But at the moment, there is still a problem.  We're currently returning all of the user's properties including the hashed password which isn't a good idea, and also this method will require the user to send another request in order to log in.  Instead, what we should do is generate and return a JWT token.
-
+But at the moment, there is still a problem.  We're currently returning all of the user's properties including the hashed password which isn't a good idea, and also this method will require the user to send another request in order to log in.  Instead, we should generate and return a JWT token with selected information about the user.
 
 ### Generating JWT Tokens - `POST /auth/login`
 
-To log in, a user will have to send a `POST` request to `/auth/login` with their username and password.  In exchange, they will receive a JWT token containing their details and a login.
+To log in, a user will have to send a `POST` request to `/auth/login` with their username and password.  In exchange, they will receive a JWT token containing some basic user details and an expiry timestamp.
 
 So, the first thing to do is to create a route handler in the `AuthController`:
 
@@ -532,7 +597,8 @@ async postLogin(@Request() request: Request) {
 
 #### Validating Users
 
-Next, to implement the `validateUser` method in `AuthService`.  This should accept a username and plaintext password, find the User by it's email address (with the help of the `UserService`) and then use the `EncryptionService` to check the password.  If everything is fine, then it should return the User but otherwise return null.
+To validate the user, we'll create a `validateUser` method in the `AuthService`  This should accept a username and plaintext password, find the User by it's email address (with the help of the `UserService`) and then use the `EncryptionService` to check the password.   If the user has been found and the password check is OK, then it should return a `User` object, otherwise it should return null.
+
 
 ```ts
 // auth.service.ts
@@ -559,26 +625,26 @@ async findByEmail(email: string): Promise<User | undefined> {
 }
 ```
 
-In order to generate a token, we can to use an open-source library called Passport.  Passport acts as a _middleware_,
-authenticating requests using using *strategies*.  In basic terms, a Passport Strategy is a class with a `validate` method, which will check the request's context (eg, check and validate a token), and throw an `Error` to stop the request if anything goes wrong.
+In order to generate a token, we'll use Passport. Passport acts as a _middleware_, authenticating requests using using *strategies*.  In basic terms, a strategy is a class which implements a a `validate` method.  The validate method will check the context of the request (ie. check the user's credentials or a token) and stop the request by throwing an error if anything goes wrong.
 
-We can implement Passport into Nest using the `@nestjs/passport` plugin.
+The `@nestjs/passport` library contains all of the helper functions required to integrate Passport into Nest.
+
 <!-- `@nestjs/passport` is a utility library which includes handy clases for implementing [Guard](https://docs.nestjs.com/guards). -->
 
-Alongisde Passport, we will use [Passport Local](http://www.passportjs.org/packages/passport-local/), an out-of-the-box add-on for Passport that allows you to perform basic authenticating using a Uername and Password.
+Alongside Passport, we will use [Passport Local](http://www.passportjs.org/packages/passport-local/), an out-of-the-box add-on for Passport that allows you to perform basic authenticating using a Username and Password.
 
-#### Installing Dependencies
+#### Installing Passport and Passport Local Dependencies
 
 ```sh
 npm i --save @nestjs/passport passport passport-local
 npm i --save-dev @types/passport-local
 ```
 
-#### Local Strategy
+#### Building a Local Strategy
 
 To implement a local strategy, we can extend the `PassportStrategy` from the package and register it as a provider in the `AuthModule`.
 
-For the local-strategy, Passport expects a validate() method with the following signature: `validate(username: string, password:string): any`.  The strategy will be `@Injectable` so we can use it in any modules that import the `AuthModule`.  Inside the auth folder, create a new file called `local.strategy.ts`:
+For the local-strategy, Passport expects a `validate` method with the following signature: `validate(username: string, password:string): any`.  The strategy will be `@Injectable` so we can use it in any modules that import the `AuthModule`.  Inside the auth folder, create a new file called `local.strategy.ts`:
 
 ```sh
 touch src/auth/local.strategy.ts
@@ -607,18 +673,9 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-By default the LocalStrategy will look for a field named `password`, but as we want the user to log in with their email address, we can customise the behaviour by passing an object into the the `super()` call inside the constructor, stating that the `usernameField` should be pulled from `email` in the request.
+By default the LocalStrategy will look for a field in the request named `username`, but as we want the user to log in with their email address, we can customise the behaviour by passing an object into the the `super()` call within the constructor stating that the `usernameField` should be instead be the `email` in the request.
 
-The `validate` method on this class calls the `validateUser` method on the injected `AuthService`, and if a valid value hasn't been returned, throws an `UnauthorizedException` (imported from `@nestjs/common`)
-
-<!-- Additionally, if the `Request` object is required in the strategy, you can pass an object in the `super` call from the constructor with `passReqToCallback` set to `true`.
-
-```ts
-  constructor(private authService: AuthService) {
-    super({ usernameField: 'email', passReqToCallback: true });
-  }
-```
-This will change the signature of the validate method to be: `validate(request: Request, username: string, password: string)`. -->
+The `validate` method on this class calls the `validateUser` method that we created earlier, and if a User object hasn't been returned it will halt the request by throwing an `UnauthorizedException` (imported from `@nestjs/common`).
 
 Then, we need to register it as a provider in the AuthModule so that it can be used within the module.
 
@@ -636,7 +693,11 @@ export class AuthModule {}
 
 #### Adding a Route Guard
 
-To use the strategy above, we'll need to create a class that extends `AuthGuard` - a class provided by `@nestjs/passport`.   Before a request hits the route handler function, Nest will pass the request through a pipeline of [Guard](https://docs.nestjs.com/guards) which have the responsibility of validating the request and throwing an error if anything goes wrong.  In this case, the AuthGuard will extract he user's credentials from the request and then pass it to an instance of the `LocalStrategy` class.  If the credentials are correct, it will add a `user` item to the `Request` object with whatever is returned from the `validate` method, otherwise it will throw the UnauthorizedException which will dealt with further down the stack.
+To use the strategy above, we'll need to create a class that extends `AuthGuard` - a class provided by `@nestjs/passport`.
+
+ Before a request hits the route handler function, Nest will pass the request through a pipeline of [Guards](https://docs.nestjs.com/guards) which have the responsibility of validating the request and throwing an error if anything goes wrong.
+
+ In this case, the AuthGuard will extract he user's credentials from the request and then pass it to an instance of the `LocalStrategy` class.  If the credentials are correct, it will add a `user` item to the `Request` object with whatever is returned from the `validate` method, otherwise it will throw the `UnauthorizedException` which will be dealt with further down the stack.
 
 ```sh
 touch src/auth/local-auth.guard.ts
@@ -651,8 +712,7 @@ import { Injectable } from "@nestjs/common";
 export class LocalAuthGuard extends AuthGuard('local') {}
 ```
 
-
-We can then tell Nest to use the `LocalAuthGuard` to _guard_ the request.  If all goes well, the guard will set `request.user` to be the user's information.  If there is a problem with the user's credentials then the code in the route handler will never be touched.
+We can then tell Nest to use the `LocalAuthGuard` to _guard_ the request using the `UseGuards` decorator.  If all goes well, the guard will set `request.user` to be the user's information.  If there is a problem with the user's credentials then the code in the route handler will never be touched.
 
 ```ts
 // auth.controller
@@ -663,27 +723,22 @@ async postLogin(@Request() request) {
 }
 ```
 
-This will now return the user's properties, including their password which isn't ideal.  Instead, we should be returning a JWT token.  To do that, we will need `passport-jwt`.  Similar to `passport-local`, is a strategy for autenticating users, but instead of using Username and password, it will check a [token](https://jwt.io) provided in the `Authorization` header.
+#### Generating and Returning a JWT
 
-A JWT is a Base 64 encoded string which contains 3 pieces of information:
-- A header containing the type of token and the algorithm used to sign it
-- A payload containing information about the user, such as their username (the subject or `sub`), and an expiration time (`exp`)
-- A signature
-
-Although it it technically possible to tamper with the payload of a JWT token, because it is encrypted using a secret any changes to the payload will mean that the signature will be invalid.  This will be picked up automatically by the extension.
+This route handler will now return the user's properties, including their password which isn't ideal.  Instead, we should be returning a JWT token.  To do that, we will need `passport-jwt`.  Similar to `passport-local`, is a strategy for authenticating users, but instead of using Username and password, it will check a [token](https://jwt.io) provided in the `Authorization` header.
 
 The token will also expire after the expiration time (`exp`), but you can also tell passport to ignore the expiration time.
 
 **Note:** It is important to remember that these keys can be easily decoded, so they shouldn't contain any sensitive information.
 
-To use `passport-jwt`, we'll also need `@nestjs/jwt`.
+To use `passport-jwt` with Nest, we'll also need to install `@nestjs/jwt`.
 
 ```sh
 npm install @nestjs/jwt passport-jwt
 npm install @types/passport-jwt --save-dev
 ```
 
-Next, we'll need to register the JWTService from `@nestjs/jwt` with the AuthModule.  The `JwtModule` requires either a secret or PEM, for now we'll use a secret from .env, and obtained through the `ConfigService`.
+Next, we'll need to register the JWTService from `@nestjs/jwt` with the `AuthModule`.  The `JwtModule` requires either a secret or PEM, for now we'll add a secret key to `.env` that we can then retrieve using the `ConfigService`.
 
 The values in `.env` should look something like this:
 
@@ -693,7 +748,9 @@ JWT_SECRET=mySecret
 JWT_EXPIRES_IN=30d
 ```
 
-Then, like the `Neo4jModule`, we can register a dynamic JWT module using the `registerAsync` function - providing a `useFactory` function to return the `JwtModule` configuration.
+Then, like with the `Neo4jModule`, we can import the JwtModule into the `AuthModule` using the `registerAsync` function.
+
+The function takes a Dynamic Module configuration, so we can instruct Nest to import the `ConfigModule`, then inject the `ConfigService` into a factory function (`useFactory`) which will then return the `secret` and `signinOptions` required to instantiate the module.
 
 ```ts
 // auth.module.ts
@@ -721,6 +778,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 export class AuthModule {}
 ```
 
+#### JWT Strategy
+
 Just like the Local Strategy, we also need a JWT Strategy.  `passport-jwt` provides an `ExtractJwt.fromAuthHeaderAsBearerToken` function which we can pass through to the `super` call in the PassportStrategy.
 
 ```sh
@@ -730,6 +789,7 @@ touch src/auth/jwt.strategy.ts
 The constructor needs an instance of the `ConfigService` to get the secret, otherwise it will fail to validate the token.
 
 ```ts
+// jwt.strategy.ts
 import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ConfigService } from "@nestjs/config";
@@ -753,10 +813,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-Under the hood, Passport will guarantee that the token received by `validate` is a valid token, which has been correctly signed and has not expired.  Then it is up to us to return the information that will be assigned to `user` on the `Request` object.  For this, I will mimic the value returned from the `LocalStrategy` and return the User node from the database via the `UserService`.
+Under the hood, Passport JWT will guarantee that the token received by the `validate` method is a valid token, which has been correctly signed and has not expired yet.  Then it is up to us to return the information that will be assigned to `user` on the `Request` object.  For this, I will mimic the value returned from the `LocalStrategy` and return the User node from the database via the `UserService`.
 
-Next, as with the Local Auth Guard, we'll need a Jwt Auth Guard.
+**Note:** We could also ignore the expiry date by setting `ignoreExpiration: true,` in the constructor.  This would be a good idea if, for example, we issued a short-life JWT token but also issued a [refresh token](https://auth0.com/learn/refresh-tokens/) as part of the payload.  We could then check the database for the refresh token and if found, allow the request issue another short-life JWT token.
 
+As with the `LocalAuthGuard`, we'll also need to create a JWT Auth Guard.
 
 ```sh
 touch src/auth/jwt-auth.guard.ts
@@ -770,7 +831,7 @@ import { AuthGuard } from "@nestjs/passport";
 export class JwtAuthGuard extends AuthGuard('jwt') {}
 ```
 
-Then add it as a provider for the `AuthModule`
+Then add it as a provider for the `AuthModule`:
 
 ```ts
 // auth.module.ts
@@ -785,9 +846,10 @@ import { JwtStrategy } from './jwt.strategy';
 export class AuthModule {}
 ```
 
-To prove that it works, we can add a new route to the `AuthController`.
+Then, to prove that the guard works, we can add it as a guard for a route handler using the `@UseGuards` decorator:
 
 ```ts
+// auth.controller.ts
 @UseGuards(JwtAuthGuard)
 @Get('user')
 async getUser(@Request() request) {
@@ -799,7 +861,26 @@ async getUser(@Request() request) {
 
 #### Adding the token to the login request
 
-Now we have can validate the token, we can add the generation process to the `AuthService`.  To do this, we'll need to inject the `JwtService` into the `AuthService` and then call the `sign` method with our payload.
+Now we have can validate the token, we can add a method to generate a new JWT token to the `AuthService`.  To access the JWT Service, we'll need to add it to the constructor of the `AuthService`
+
+```ts
+// auth.service.ts
+import { JwtService } from '@nestjs/jwt';
+
+// ...
+@Injectable()
+export class AuthService {
+
+    constructor(
+        private readonly userService: UserService,
+        private readonly encryptionService: EncryptionService,
+        private readonly jwtService: JwtService
+    ) {}
+
+    // ...
+}
+```
+
 
 As I mentioned earlier, this can be easily decoded so we should be careful about the kind of information we include in the token.  In reality, we only need enough information in the token to validate that it is correct (eg. their email address) but we can also add information that can be used to customise the UI.  In future, we might want to add the subscription types but for now we'll just go with name, email and date of birth.
 
@@ -826,7 +907,7 @@ async createToken(user: User) {
 }
 ```
 
-The method takes a User object (in this case a Node), pulls a set of properties from the node and uses the JwtService to encode that into a string.
+The method takes a User object (in this case a Node), pulls a set of properties from the node and uses the `JwtService` to encode and sign the JWT.  The result of the call to `this.jwtService.sign` is a base64 encoded string similar to the one mentioned at the top of this article.
 
 We can now hook this into the `POST /auth/login` method in the `AuthController`:
 
@@ -869,7 +950,7 @@ export class AuthController {
 
 If we head back to the end-to-end tests, we can make sure that this entire process works.
 
-If I shift the email, username and password variables into the  `describe('Auth', ...)` block, they will be available for each child group.  This way I can generate a random email and password and use it throughout the Auth tests.
+By shifting the email, usernamd and password variables into the  `describe('Auth', ...)` block, we can make them available to each test within that group.  That way we can generate a random email address and password that can be used for the duration of the Auth tests.
 
 ```ts
 // app-e2e.spec.ts
@@ -882,7 +963,12 @@ describe('Auth', () => {
 })
 ```
 
-To test the login flow, I will need three tests; one for a bad username, one for bad password and one that verifies that a valid token is returned.  I'll assign the returned token to the `token` variable in the parent `describe` block so I can use it on `GET /auth/user` later.
+To test the login flow, we will need 3 tests  to ensure that the API:
+- Rejects a request with a bad username, returning a `401 Unauthorized` status
+- Rejects a request with a valid username but incorrect password
+- Returns a JWT token when correct credentials are provided.
+
+As part of the final test, I'll also assign the returned JWT token returned by the API to the `token` variable in the parent `describe` block so it can be used in the `GET /auth/user` later on.
 
 ```ts
 // app-e2e.spec.ts
@@ -925,7 +1011,7 @@ describe('POST /auth/login', () => {
 })
 ```
 
-Given the token provided above, does it successfully identify the user and do the details returned form the API match the original details the user registered with?
+Given the token obtained from the Login request, does it successfully identify the user and do the details returned form the API match the original details the user registered with?
 
 ```ts
 // app-e2e.spec.ts
@@ -960,9 +1046,9 @@ it('should return error if incorrect JWT supplied', () => {
 })
 ```
 
-In the code `token.replace(/[0-9]+/g, 'X')` I'm replacing all numbers with an `X` - this mimics the behaviour of a would-be hacker who may try to change the payload of the token.  `passport-jwt` will generate a signature for the payload using the secret key from our `.env` file and compare it against the signature passed with the payload.
+In the code `token.replace(/[0-9]+/g, 'X')` I'm replacing all numbers with an `X`.  In theory this mimics the behaviour of a would-be hacker who may try to change the payload of the token but in reality it doesn't matter what the change is as long as it invalidates the signature.
 
-Then, finally to clean up the database, we can add an `afterAll` hook to delete the user after all of the tests in Auth have run.
+Then, finally to clean up the database, we can add an `afterAll` hook to delete the user after all of the Auth tests have run.
 
 ```ts
 describe('Auth', () => {
@@ -989,6 +1075,7 @@ Next week we will look at **Authorisation** - ensuring that the User can do what
 
 
 ### Further Reading:
+- [Auth0: Get started with JSON Web Tokens](https://auth0.com/learn/json-web-tokens/)
 - [Nest Docs: Authentication](https://docs.nestjs.com/techniques/authentication)
 - [Nest Docs: Testing](https://docs.nestjs.com/fundamentals/testing)
 - [Passport](http://www.passportjs.org/)
