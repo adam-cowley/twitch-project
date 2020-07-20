@@ -1,0 +1,9 @@
+id,name,price,days,genres
+1,Childrens,4.99,30,Animation|Comedy|Family|Adventure
+2,Bronze,7.99,30,Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama
+3,Silver,9.99,30,Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama|Action|Crime|Thriller|Horror
+4,Gold,12.99,30,Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama|Action|Crime|Thriller|Horror|History|Science Fiction|Mystery|War
+5,Platinum,29.99,30,Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama|Action|Crime|Thriller|Horror|History|Science Fiction|Mystery|War|Foreign|Music|Documentary|Western|TV Movie
+6,Ultimate,99.99,90,Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama|Action|Crime|Thriller|Horror|History|Science Fiction|Mystery|War|Foreign|Music|Documentary|Western|TV Movie
+
+
