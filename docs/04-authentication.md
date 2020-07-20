@@ -30,7 +30,7 @@ When decoded, the header will contain information about the type of token and th
 
 ### The Payload
 
-The token's payload is a base64 encoded JSON object contains certain *claims* about the User, for example information about who they are. Although there are some reserved claims (for example the *issuer* or `iss`, *subject* or `sub` and *expiry* or `exp`), any information can be added to the payload. It is worth remembering that the payload of a JWT token can be easily decoded, so this shouldn't contain any sensitive information about the user.  In our case, we will add some basic information about the User into the token so that the UI can be customised without making unneccesary requests to the API.
+The token's payload is a base64 encoded JSON object that contains certain *claims* about the User, for example information about who they are. Although there are some reserved claims (for example the *issuer* or `iss`, *subject* or `sub` and *expiry* or `exp`), any information can be added to the payload. It is worth remembering that the payload of a JWT token can be easily decoded, so this shouldn't contain any sensitive information about the user.  In our case, we will add some basic information about the User into the token so that the UI can be customised without making unnecessary requests to the API.
 
 ```json
 {
@@ -119,7 +119,7 @@ bootstrap();
 
 For a User to register, we'll need an email address and password.  Then to personalise their service a name, and date of birth will be useful for controlling.  The user's date of birth will be also required to ensure that a User can access the content they've requested.
 
-We'll add some validation on the date to ensure that the the user is at least 13 years old in accordance with UK law.  To do this, we can use the `moment` package - `npm i moment` and subtract 13 years.
+We'll add some validation on the date to ensure that the user is at least 13 years old in accordance with UK law.  To do this, we can use the `moment` package - `npm i moment` and subtract 13 years.
 
 
 The `create-user.dto.ts` should look something like this:
@@ -201,7 +201,7 @@ Ahh, dependency injection, our old friend.  Nest doesn't recognise `UserService`
     })
     export class AuthModule {}
    ```
-1. Add an `exports` array containing `UserService` to `UserModule` so that
+1. Add an `exports` array containing `UserService` to `UserModule` so that modules that Nest's IoC container recognises the module.
     ```ts
     import { UserService } from './user.service';
     @Module({
@@ -211,7 +211,7 @@ Ahh, dependency injection, our old friend.  Nest doesn't recognise `UserService`
     export class UserModule {}
     ```
 
-_There's nothing like a live coding disaster to cement an idea into your head._
+_There's nothing like a live coding disaster to cement a solution into your head._
 
 ### Testing the Endpoint
 
@@ -321,7 +321,7 @@ This usually means that there are asynchronous operations that weren't stopped i
 
 ```
 
-This is because we've not yet registered the `ValidationPipe` to the the test application used within the test.  We'll have to add this line using the `useGlobalPipes` function as we did in `main.ts`:
+This is because we've not yet registered the `ValidationPipe` to the test application used within the test.  We'll have to add this line using the `useGlobalPipes` function as we did in `main.ts`:
 
 ```ts
 // app.e2e-spec.ts
@@ -568,7 +568,7 @@ Time:        3.338 s, estimated 4 s
 Ran all test suites.
 ```
 
-A quick query in `cypher-shell` should show that the `:User` Node has been created with a hashed password:
+[A quick query in `cypher-shell`](https://neo4j.com/docs/operations-manual/current/tools/cypher-shell/) should show that the `:User` Node has been created with a hashed password:
 
 ```
 neo4j@neo4j> MATCH (u:User) WHERE exists(u.email) RETURN u.id, u.email, u.password, u.dateOfBirth;
@@ -597,7 +597,7 @@ async postLogin(@Request() request: Request) {
 
 #### Validating Users
 
-To validate the user, we'll create a `validateUser` method in the `AuthService`  This should accept a username and plaintext password, find the User by it's email address (with the help of the `UserService`) and then use the `EncryptionService` to check the password.   If the user has been found and the password check is OK, then it should return a `User` object, otherwise it should return null.
+To validate the user, we'll create a `validateUser` method in the `AuthService`  This should accept a username and plaintext password, find the User by its email address (with the help of the `UserService`) and then use the `EncryptionService` to check the password.   If the user has been found and the password check is OK, then it should return a `User` object, otherwise it should return null.
 
 
 ```ts
@@ -1065,7 +1065,7 @@ describe('Auth', () => {
 ## Recap
 
 This was a lengthy session but we've covered a lot of ground.  We've:
-- Created a User module which provides a service for interacting with Users in the database.  The service will allow you to find a User by it's email address and create a user following business rules.
+- Created a User module which provides a service for interacting with Users in the database.  The service will allow you to find a User by its email address and create a user following business rules.
 - Created an Auth service which will create users via the UserService, authenticate the User using their email address and password, and issue a JWT token to allow them to access protected API endpoints.
 - Created a Guard that will read the JWT token and either permit or deny access to the protected endpoints.
 - Created an Auth Controller with routes for registering and signing in.
