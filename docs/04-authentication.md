@@ -50,9 +50,9 @@ The signature ensures that the information held in the payload has not been tamp
 
 ## Adding Authentication to Nest
 
-Nest.js comes with a built in module for [Passport](https://github.com/jaredhanson/passport), a widely used library for authenticating users.  We will be using it to validate each request, generate [JWT](https://jwt.io/) tokens during the login process, and verify those tokens in subsequent requests.
+Nest.js comes with a built in module for [Passport](https://github.com/jaredhanson/passport), a widely used library for authenticating users.  We will be using it to validate each request, generate [JWT](https://jwt.io/) tokens during the login process, and verify those tokens in subsequent requests.  But before we get into that, we'll need to create an Authentication Service to handle the business logic.
 
-To follow the conventions set out by Nest, we should create an Authentication Service which will handle the authentication, a controller to accept a login request, and then a module to register the components with the main application.
+To follow the conventions set out by Nest, we should create a new module which we can register in the main application. This module should provide access to a service which will handle the authentication and a controller to accept the HTTP requests.
 
 ```sh
 nest g mo auth
