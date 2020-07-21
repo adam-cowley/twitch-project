@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { User } from '../user/user.service';
 import { int } from 'neo4j-driver';
@@ -16,45 +16,66 @@ export class GenreService {
     async getGenresForUser(user: User): Promise<Genre[]> {
         const userId: string = (<Record<string, any>> user.properties).id
         const res = await this.neo4jService.read(`
-            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p),
-                (p)-[:PROVIDES_ACCESS_TO]->(g)
+            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
             WHERE s.expiresAt >= datetime()
-            RETURN g
+
+            OPTIONAL MATCH  (p)-[:PROVIDES_ACCESS_TO]->(g)
+
+            WITH p, g
             ORDER BY g.name ASC
+
+            RETURN p, collect(g { .id, .name }) AS genres
         `, { userId })
 
-        return res.records.map(row => ({
-            ...row.get('g').properties,
-            id: row.get('g').properties.id.toNumber()
-        }))
+        if ( res.records.length == 0 ) {
+            throw new UnauthorizedException('You have no active subscriptions')
+        }
+
+        return res.records[0].get('genres')
     }
 
     async getMoviesForGenre(user: User, genreId: number, orderBy: string, limit: number, page: number) {
         const userId: string = (<Record<string, any>> user.properties).id
         const res = await this.neo4jService.read(`
-            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p),
-                (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})<-[:IN_GENRE]-(m:Movie)
+            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
             WHERE s.expiresAt >= datetime()
-                AND ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult )
-            RETURN m,
-                [ (m)-[:IN_GENRES]->(g) | g ] AS genres,
-                [ (m)<-[:CAST_FOR]-(p) | p ][0..5] AS cast
-            ORDER BY m.title ASC
+
+            OPTIONAL MATCH (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
+
+            OPTIONAL MATCH (g)<-[:IN_GENRE]-(m:Movie)
+                WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult )
+
+            WITH s, g, m
+            ORDER BY m[$orderBy] ASC
             SKIP $skip
             LIMIT $limit
+
+            RETURN s,
+                g {
+                    .id,
+                    .name,
+                    movies: collect(m {
+                        .*,
+                        genres: [ (m)-[:IN_GENRE]->(g) | g ],
+                        cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
+                    })
+                } AS genre
         `, {
             userId,
             genreId: int(genreId),
+            orderBy,
             skip: int( (page-1) * limit ),
             limit: int(limit),
         })
 
-        return res.records.map(row => ({
-            ...row.get('m').properties,
-            id: row.get('m').properties.id.toNumber(),
-            genres: row.get('genres'),
-            cast: row.get('cast')
-        }))
+        if ( res.records.length == 0 ) {
+            throw new UnauthorizedException('You have no active subscriptions')
+        }
+        else if ( !res.records[0].get('genre') ) {
+            throw new NotFoundException(`Cannot find genre with ID ${genreId}`)
+        }
+
+        return res.records[0].get('genre')
     }
 
 
