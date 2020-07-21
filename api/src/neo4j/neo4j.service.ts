@@ -1,4 +1,4 @@
-import neo4j, { Result, Driver } from 'neo4j-driver'
+import neo4j, { Result, Driver, int } from 'neo4j-driver'
 import { Injectable, Inject, OnApplicationShutdown } from '@nestjs/common';
 import { Neo4jConfig } from './neo4j-config.interface';
 import { NEO4J_CONFIG, NEO4J_DRIVER } from './neo4j.constants';
@@ -17,6 +17,10 @@ export class Neo4jService implements OnApplicationShutdown {
 
     getConfig(): Neo4jConfig {
         return this.config;
+    }
+
+    int(value: number) {
+        return int(value)
     }
 
     getReadSession(database?: string) {

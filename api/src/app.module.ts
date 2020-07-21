@@ -7,6 +7,8 @@ import { Neo4jConfig } from './neo4j/neo4j-config.interface';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { EncryptionModule } from './encryption/encryption.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { GenreModule } from './genre/genre.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { EncryptionModule } from './encryption/encryption.module';
     AuthModule,
     UserModule,
     EncryptionModule,
+    SubscriptionModule,
+    GenreModule,
   ],
   controllers: [AppController],
   providers: [AppService],

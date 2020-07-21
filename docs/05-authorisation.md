@@ -2,7 +2,7 @@
 
 Previously, we looked at **Authentication**; how we could verify that the User is who they say they are.  Now, we'll look at ensuring that a User is actually able to do what they want - in other words **Authorisation**.  To clarify the difference, let's take a look at a scenario for Neoflix.
 
-When a User first registers for Neoflix they will should automatically be given a 30 day free trial which will give hem access to all content on the site.  After this free trial ends, they will be required to buy a Subscription which will automatically renew every 30 days unless the user cancels the subscription.
+When a User first registers for Neoflix they will should automatically be given a 30 day free trial which will give them access to all content on the site.  After this free trial ends, they will be required to buy a Subscription which will automatically renew every 30 days unless the user cancels the subscription.
 
 The fact that the User has valid user credentials (in our case email and password) means that the API can correctly **authenticate** them.  Although they have valid credentials, the absence of a current subscription means that we can't **authorise** their request.  Authorisation may also extend to users who are under 18 years old but are trying to access adult content.
 
@@ -17,7 +17,7 @@ CREATE CONSTRAINT ON (p:Package) ASSERT p.id IS UNIQUE;
 CREATE CONSTRAINT ON (s:Subscription) ASSERT s.id IS UNIQUE;
 ```
 
-I have created a CSV file with 6 packages, each of which has a unique ID (`integer`), name, price (`float`) and the number of days that a Package is valid for for that price.  Similar to Sky Movies subscriptions, Packages will provide access to one or more Genres - these are represented in the CSV file as a pipe delimited list of the Genres.
+[I have created a CSV file](https://github.com/adam-cowley/twitch-project/blob/master/data/packages.csv) with 6 packages, each of which has a unique ID (`integer`), name, price (`float`) and the number of days that a Package is valid for for that price.  Similar to Sky Movies subscriptions, Packages will provide access to one or more Genres - these are represented in the CSV file as a pipe delimited list of the Genres.
 
 ```sh
 head -n 3 data/packages.csv
@@ -25,7 +25,6 @@ head -n 3 data/packages.csv
 id,name,price,days,genres
 1,Childrens,4.99,30,Animation|Comedy|Family|Adventure
 2,Bronze,7.99,30,Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama
-...
 ```
 
 This CSV file can be imported in using `LOAD CSV`.  As mentioned in the [session on Modelling](./03-modelling.md), all data loaded by `LOAD CSV` is cast as a string by default, so we'll have to convert the package to an integer using `toInteger` and the price into a float using `toFloat()`.  We can convert the days column into a native Neo4j duration using a string in a format recognised by a [Java `Duration`](https://www.baeldung.com/java-period-duration).  In this case we're interested in the number of days, for example `P{X}D` where `{X}` is the number of days.
@@ -44,7 +43,7 @@ FOREACH (name IN split(row.genres, '|') |
 )
 ```
 
-The `FOREACH` statement at the end of the query splits the genres column by pipe (`|`), merge the Genre on it's name and then creates a relationship between the `:Package` and `:Genre` nodes.
+The `FOREACH` statement at the end of the query splits the genres column by pipe (`|`), merge the Genre on its name and then creates a relationship between the `:Package` and `:Genre` nodes.
 
 ### Checking Subscriptions using Cypher
 
@@ -168,7 +167,7 @@ async createSubscription(user: User, packageId: number, days: number = null): Pr
 }
 ```
 
-For the Cypher query itself, we want to find the user and package by their ID's, then create a `:Subscription` node.  The subscription node should have it's own id (generated with cypher's `randomUUID` function), a `createdAt` datetime and also the expiration date and time.
+For the Cypher query itself, we want to find the user and package by their ID's, then create a `:Subscription` node.  The subscription node should have its own id (generated with cypher's `randomUUID` function), a `createdAt` datetime and also the expiration date and time.
 
 ```ts
 const userId = (<Record<string, any>> user.properties).id
@@ -191,7 +190,7 @@ return res.records[0].get('s')
 
 ### Note: Working with Integers
 
-So far we've not worked with Integers in Neo4j so the `this.neo4jService.int` function will need some explaining.  The Neo4j type system uses 64bit integers with a max value of  `922337203685477600` - considerably higher than the maximum value that JavaScript can safely represent as an Integer (`Number.MIN_SAFE_INTEGER` or `9007199254740991`).  For this reason, the Neo4j driver comes with it's own `Integer` value (exported under `neo4j.types.Integer`).  Any number that isn't explicitly converted to this Integer type will be passed to the driver as a `Float`.
+So far we've not worked with Integers in Neo4j so the `this.neo4jService.int` function will need some explaining.  The Neo4j type system uses 64bit integers with a max value of  `922337203685477600` - considerably higher than the maximum value that JavaScript can safely represent as an Integer (`Number.MIN_SAFE_INTEGER` or `9007199254740991`).  For this reason, the Neo4j driver comes with its own `Integer` value (exported under `neo4j.types.Integer`).  Any number that isn't explicitly converted to this Integer type will be passed to the driver as a `Float`.
 
 For this reason, we'll either need to explicitly convert our Integers to this `Integer` type using the `int` function provided by the Driver or use the `toInteger` function in Cypher to convert the number back from a float.
 
@@ -352,7 +351,7 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { GenreService } from './genre.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@Controller('genre')
+@Controller('genres')
 export class GenreController {
 
     constructor(private readonly genreService: GenreService) {}
@@ -366,14 +365,14 @@ export class GenreController {
 }
 ```
 
-The `GenreService` will need a `getGenres` method.  This should take the `User` as it's only argument, which we will use to find the starting point for the cypher query.  From there, we will traverse the graph through to the genres that the user has permission to access.
+The `GenreService` will need a `getGenres` method.  This should take the `User` as its only argument, which we will use to find the starting point for the cypher query.  From there, we will traverse the graph through to the genres that the user has permission to access.
 
 So far we've been working with Neo4j Driver's `Node` data type, but as this is public facing data, let's instead define a typescript interface to represent properties that will represent the Genre in the response.
 
 ```ts
 // genre.service.ts
 export interface Genre {
-    id: string;
+    id: number;
     name: string
 }
 ```
@@ -645,7 +644,7 @@ You can make the tests more sophisticated than this but for now it demonstrates 
 
 ## Recap
 
-In this session we've covered how to run some basic authorisation using the structure of the graph.  When a user registers, they will have access to everything as part of a 30 day trial.  Once that trial expires, they will be required to purchase a subscription.  We already have the methods available to create the new subscription in the `SubscriptionService`, we just need to expose that via the REST API.  The tests are also pretty basic at the moment, so it is worth spending some time testing for different scenarios, for example if a user tries to access a Genre that their subscription doesn't provide access to.
+In this session we've covered how to run some basic authentication using the structure of the graph.  When a user registers, they will have access to everything as part of a 30 day trial.  Once that trial expires, they will be required to purchase a subscription.  We already have the methods available to create the new subscription in the `SubscriptionService`, we just need to expose that via the REST API.  The tests are also pretty basic at the moment, so it is worth spending some time testing for different scenarios, for example if a user tries to access a Genre that their subscription doesn't provide access to.
 
 The API now also return data in Neo4j specific formats - for example `datetime`s or `duration`s which currently take a lot of repetitive code to convert.  We'll look at this in more detail in the next session.
 

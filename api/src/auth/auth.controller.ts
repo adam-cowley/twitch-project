@@ -4,13 +4,15 @@ import { UserService } from '../user/user.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthService } from './auth.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 @Controller('auth')
 export class AuthController {
 
     constructor(
         private readonly userService: UserService,
-        private readonly authService: AuthService
+        private readonly authService: AuthService,
+        private readonly subscriptionService: SubscriptionService
     ) { }
 
     @Post('register')
@@ -22,6 +24,8 @@ export class AuthController {
             createUserDto.firstName,
             createUserDto.lastName
         )
+
+        await this.subscriptionService.createSubscription(user, 0)
 
         return await this.authService.createToken(user)
     }

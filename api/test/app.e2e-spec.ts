@@ -28,7 +28,7 @@ describe('AppController (e2e)', () => {
     describe('Auth', () => {
         const email = `${Math.random()}@adamcowley.co.uk`
         const password = Math.random().toString()
-        let token
+        let token, genreId
 
         describe('POST /auth/register', () => {
             it('should validate the request', () => {
@@ -120,5 +120,77 @@ describe('AppController (e2e)', () => {
             })
         })
 
+
+
+        describe('GET /genres', () => {
+            it('should return unauthorised if no token is provided', () => {
+                return request(app.getHttpServer())
+                    .get('/genres')
+                    .expect(401)
+            })
+
+            it('should return unauthorised on incorrect token', () => {
+                return request(app.getHttpServer())
+                    .get('/genres')
+                    .set('Authorization', `Bearer incorrect`)
+                    .expect(401)
+            })
+
+            it('should authenticate a user with the JWT token', () => {
+                return request(app.getHttpServer())
+                    .get('/genres')
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body.length).toEqual(20)
+
+                        res.body.forEach(row => {
+                            expect( Object.keys(row) ).toEqual(
+                                expect.arrayContaining(['id', 'name'])
+                            )
+                        })
+
+                        // Assigning genre for nest test
+                        genreId = res.body[0].id
+                    })
+            })
+        })
+
+        describe('GET /genres/:id', () => {
+            it('should return unauthorised if no token is provided', () => {
+                return request(app.getHttpServer())
+                    .get(`/genres/${genreId}`)
+                    .expect(401)
+            })
+
+            it('should return unauthorised on incorrect token', () => {
+                return request(app.getHttpServer())
+                .get(`/genres/${genreId}`)
+                    .set('Authorization', `Bearer incorrect`)
+                    .expect(401)
+            })
+
+            it('should return a list of genres in exchange for a valid token', () => {
+                return request(app.getHttpServer())
+                    .get(`/genres/${genreId}`)
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body.length).toEqual(10)
+                    })
+            })
+
+            it('should return a paginated list of genres in exchange for a valid token', () => {
+                const limit = 20
+                return request(app.getHttpServer())
+                    .get(`/genres/${genreId}?limit=${limit}`)
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body.length).toEqual(limit)
+                    })
+            })
+        })
     })
+
 });
