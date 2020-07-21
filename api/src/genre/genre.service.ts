@@ -24,7 +24,11 @@ export class GenreService {
             WITH p, g
             ORDER BY g.name ASC
 
-            RETURN p, collect(g { .id, .name }) AS genres
+            RETURN p, collect(g {
+                .id,
+                .name,
+                totalMovies: size((g)<-[:IN_GENRE]-())
+            }) AS genres
         `, { userId })
 
         if ( res.records.length == 0 ) {
@@ -32,6 +36,47 @@ export class GenreService {
         }
 
         return res.records[0].get('genres')
+    }
+
+    async getGenreDetails(user: User, genreId: number) {
+        const userId: string = (<Record<string, any>> user.properties).id
+        const res = await this.neo4jService.read(`
+            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
+            WHERE s.expiresAt >= datetime()
+
+            OPTIONAL MATCH (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
+
+            OPTIONAL MATCH (g)<-[:IN_GENRE]-(m:Movie)
+                WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult )
+
+            WITH s, g, m
+            ORDER BY m.popularity DESC
+            LIMIT 10
+
+            RETURN
+                g {
+                    .id,
+                    .name,
+                    totalMovies: size((g)<-[:IN_GENRE]-()),
+                    popular: collect(m {
+                        .*,
+                        genres: [ (m)-[:IN_GENRE]->(g) | g ],
+                        cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
+                    })
+                } AS genre
+        `, {
+            userId,
+            genreId: int(genreId),
+        })
+
+        if ( res.records.length == 0 ) {
+            throw new UnauthorizedException('You have no active subscriptions')
+        }
+        else if ( !res.records[0].get('genre') ) {
+            throw new NotFoundException(`Cannot find genre with ID ${genreId}`)
+        }
+
+        return res.records[0].get('genre')
     }
 
     async getMoviesForGenre(user: User, genreId: number, orderBy: string, limit: number, page: number) {
@@ -45,25 +90,16 @@ export class GenreService {
             OPTIONAL MATCH (g)<-[:IN_GENRE]-(m:Movie)
                 WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult )
 
-            WITH s, g, m
-            ORDER BY m[$orderBy] ASC
+            RETURN s,
+            g,
+            m
+
+            ORDER BY m.title ASC
             SKIP $skip
             LIMIT $limit
-
-            RETURN s,
-                g {
-                    .id,
-                    .name,
-                    movies: collect(m {
-                        .*,
-                        genres: [ (m)-[:IN_GENRE]->(g) | g ],
-                        cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
-                    })
-                } AS genre
         `, {
             userId,
             genreId: int(genreId),
-            orderBy,
             skip: int( (page-1) * limit ),
             limit: int(limit),
         })
@@ -71,11 +107,11 @@ export class GenreService {
         if ( res.records.length == 0 ) {
             throw new UnauthorizedException('You have no active subscriptions')
         }
-        else if ( !res.records[0].get('genre') ) {
-            throw new NotFoundException(`Cannot find genre with ID ${genreId}`)
+        else if ( !res.records[0].get('g') ) {
+            throw new NotFoundException('Cannot find genre')
         }
 
-        return res.records[0].get('genre')
+        return res.records.map(row => row.get('m'))
     }
 
 

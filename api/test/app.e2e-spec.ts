@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { Neo4jService } from '../src/neo4j/neo4j.service';
+import { Neo4jTypeInterceptor } from '../src/neo4j/neo4j-type.interceptor';
 
 describe('AppController (e2e)', () => {
     let app: INestApplication;
@@ -14,6 +15,7 @@ describe('AppController (e2e)', () => {
 
         app = moduleFixture.createNestApplication();
         app.useGlobalPipes(new ValidationPipe());
+        app.useGlobalInterceptors(new Neo4jTypeInterceptor());
         await app.init();
     });
 
@@ -128,8 +130,6 @@ describe('AppController (e2e)', () => {
             })
         })
 
-
-
         describe('GET /genres', () => {
             it('should return unauthorised if no token is provided', () => {
                 return request(app.getHttpServer())
@@ -173,29 +173,88 @@ describe('AppController (e2e)', () => {
 
             it('should return unauthorised on incorrect token', () => {
                 return request(app.getHttpServer())
-                .get(`/genres/${genreId}`)
+                    .get(`/genres/${genreId}`)
                     .set('Authorization', `Bearer incorrect`)
                     .expect(401)
             })
 
-            it('should return a list of genres in exchange for a valid token', () => {
+            it('should return not found when genre is not found', () => {
+                return request(app.getHttpServer())
+                    .get(`/genres/999`)
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(404)
+            })
+
+            it('should return genre information and popular movies in exchange for a valid token', () => {
                 return request(app.getHttpServer())
                     .get(`/genres/${genreId}`)
                     .set('Authorization', `Bearer ${token}`)
                     .expect(200)
                     .expect(res => {
-                        expect(res.body.length).toEqual(10)
+                        expect(res.body.id).toEqual(genreId)
+                        expect(res.body.movies).toBeInstanceOf(Array)
+                        expect(res.body.movies.length).toEqual(10)
+                        expect(res.body.movies[0].popularity).toBeGreaterThanOrEqual(res.body.movies[0].popularity)
                     })
             })
+        })
 
-            it('should return a paginated list of genres in exchange for a valid token', () => {
-                const limit = 20
+        describe('GET /genres/:id/movies', () => {
+            it('should return unauthorised if no token is provided', () => {
                 return request(app.getHttpServer())
-                    .get(`/genres/${genreId}?limit=${limit}`)
+                    .get(`/genres/${genreId}/movies`)
+                    .expect(401)
+            })
+
+            it('should return unauthorised on incorrect token', () => {
+                return request(app.getHttpServer())
+                    .get(`/genres/${genreId}/movies`)
+                    .set('Authorization', `Bearer incorrect`)
+                    .expect(401)
+            })
+
+            it('should return not found when genre is not found', () => {
+                return request(app.getHttpServer())
+                    .get(`/genres/999/movies`)
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(404)
+            })
+
+
+            it('should return a list of movies in exchange for valid token', () => {
+                return request(app.getHttpServer())
+                .get(`/genres/${genreId}/movies`)
+                .set('Authorization', `Bearer ${token}`)
+                .expect(200)
+                .expect(res => {
+                    expect(res.body).toBeInstanceOf(Array)
+                    expect(res.body.length).toEqual(10)
+                })
+            })
+
+            it('should apply pagination', async () => {
+                const limit = 2
+                let firstId
+
+                await request(app.getHttpServer())
+                    .get(`/genres/${genreId}/movies?limit=${limit}`)
                     .set('Authorization', `Bearer ${token}`)
                     .expect(200)
                     .expect(res => {
+                        expect(res.body).toBeInstanceOf(Array)
                         expect(res.body.length).toEqual(limit)
+
+                        firstId = res.body[0].id
+                    })
+
+                return request(app.getHttpServer())
+                    .get(`/genres/${genreId}/movies?limit=${limit}&page=2`)
+                    .set('Authorization', `Bearer ${token}`)
+                    .expect(200)
+                    .expect(res => {
+                        expect(res.body).toBeInstanceOf(Array)
+                        expect(res.body.length).toEqual(limit)
+                        expect(res.body[0].id).not.toEqual(firstId)
                     })
             })
         })

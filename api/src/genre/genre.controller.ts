@@ -19,11 +19,19 @@ export class GenreController {
     @Get('/:id')
     async getGenre(
         @Request() request,
+        @Param('id', new ParseIntPipe()) id: number
+    ) {
+        return this.genreService.getGenreDetails(request.user, id)
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('/:id/movies')
+    async getMovies(
+        @Request() request,
         @Param('id', new ParseIntPipe()) id: number,
         @Query('orderBy', new DefaultValuePipe('title') ) orderBy: string,
-        @Query('page', new DefaultValuePipe(1), new ParseIntPipe(), ) page: number,
-        @Query('limit', new DefaultValuePipe(10), new ParseIntPipe()) limit: number,
-
+        @Query('page', new DefaultValuePipe('1'), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe('10'), ParseIntPipe) limit: number
     ) {
         return this.genreService.getMoviesForGenre(request.user, id, orderBy, limit, page)
     }
