@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Node, types } from 'neo4j-driver'
+import { Node, types, Transaction } from 'neo4j-driver'
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { EncryptionService } from '../encryption/encryption.service';
 
@@ -22,7 +22,7 @@ export class UserService {
         return res.records.length == 1 ? res.records[0].get('u') : undefined
     }
 
-    async create(email: string, password: string, dateOfBirth: Date, firstName?: string, lastName?: string): Promise<User> {
+    async create(databaseOrTransaction: string | Transaction, email: string, password: string, dateOfBirth: Date, firstName?: string, lastName?: string): Promise<User> {
         const res = await this.neo4jService.write(`
             CREATE (u:User)
             SET u += $properties, u.id = randomUUID()
@@ -35,7 +35,7 @@ export class UserService {
                 firstName,
                 lastName
             },
-        })
+        }, databaseOrTransaction)
 
         return res.records[0].get('u')
     }

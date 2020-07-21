@@ -73,7 +73,6 @@ const toNative = (value: any, showLabelsOrType?: boolean, showIdentity?: boolean
     return value
 }
 
-
 @Injectable()
 export class Neo4jTypeInterceptor implements NestInterceptor {
     constructor(private readonly showLabelsOrType: boolean = false, private readonly showIdentity: boolean = false) {}

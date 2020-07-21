@@ -114,5 +114,4 @@ export class GenreService {
         return res.records.map(row => row.get('m'))
     }
 
-
 }
