@@ -49,31 +49,6 @@ export class GenreService {
             limit: int(limit),
         })
 
-        console.log(`
-        MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p),
-            (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})<-[:IN_GENRE]-(m:Movie)
-        WHERE s.expiresAt >= datetime()
-            AND ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult )
-        RETURN m,
-            [ (m)-[:IN_GENRES]->(g) | g ] AS genres,
-            [ (m)<-[:CAST_FOR]-(p) | p ][0..5] AS cast
-        ORDER BY m.title ASC
-        SKIP $skip
-        LIMIT $limit
-    `);
-
-        console.log({
-            userId,
-            genreId,
-            skip: (page-1) * limit,
-            limit,
-        });
-
-
-
-
-        console.log(res.records[0] && res.records[0].get('cast'));
-
         return res.records.map(row => ({
             ...row.get('m').properties,
             id: row.get('m').properties.id.toNumber(),

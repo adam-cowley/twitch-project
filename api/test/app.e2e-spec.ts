@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { Neo4jService } from '../src/neo4j/neo4j.service';
 
 describe('AppController (e2e)', () => {
     let app: INestApplication;
@@ -29,6 +30,13 @@ describe('AppController (e2e)', () => {
         const email = `${Math.random()}@adamcowley.co.uk`
         const password = Math.random().toString()
         let token, genreId
+
+        afterAll(() => app.get(Neo4jService).write(`
+            MATCH (u:User {email: $email})
+            FOREACH (s IN [ (u)-[:PURCHASED]->(s) ] | DETACH DELETE s)
+            DETACH DELETE u
+        `, { email })
+        )
 
         describe('POST /auth/register', () => {
             it('should validate the request', () => {
