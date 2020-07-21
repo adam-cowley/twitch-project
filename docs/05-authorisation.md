@@ -8,7 +8,7 @@ The fact that the User has valid user credentials (in our case email and passwor
 
 ## Adding Subscriptions to the Database
 
-To build authorisation into the API, we'll first need to add the concept of Packages and Subscriptions to the database.
+To build authorisation into the API, we'll first need to add nodes to represent Packages and Subscriptions to the database.
 
 Our packages will be uniquely identified by an ID, so the first thing to do is to create the constraint in the database.  Subscriptions will also be created with a unique ID so we can also create the constraint on `:Subscription` nodes.
 
@@ -43,11 +43,11 @@ FOREACH (name IN split(row.genres, '|') |
 )
 ```
 
-The `FOREACH` statement at the end of the query splits the genres column by pipe (`|`), merge the Genre on its name and then creates a relationship between the `:Package` and `:Genre` nodes.
+The `FOREACH` statement at the end of the query splits the genres column by pipe (`|`), finds or creates the Genre node on its name and then creates a relationship to the package, signifying that a valid subscription for this Package provides access to Movies within the Genre.
 
 ### Checking Subscriptions using Cypher
 
-To show the power of the graph, we can also provide access to movies produced by a certain Production Company.  For example, the Bronze Package provides access to films in the genres of `Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama`.  Meaning we can traverse from the `:User` node, through the `:Subscription` and `:Package` to the `:Genre` all in real-time.  A User will be able to access any `:Movie` node with a relationship.
+To show the power of querying this data as a graph, we can also provide access to movies produced by a certain Production Company.  For example, the Bronze Package provides access to films in the genres of `Animation|Comedy|Family|Adventure|Fantasy|Romance|Drama`.  Meaning we can traverse from the `:User` node, through the `:Subscription` and `:Package` to the `:Genre` all in real-time.  A User will be able to access any `:Movie` node with a relationship.
 
 ```cypher
 (:User)-[:HAS_SUBSCRIPTION]->(:Subscription {expiresAt: datetime})
@@ -261,17 +261,23 @@ export class AuthController {
 
 ### Creating a new "Free Trial" Package
 
-In order for this to work, we'll also need to create this new Package with an ID of `0`.  To give the User the best experience, we'll grant this package access to all genres:
+We'll also need to create a "Free Trial" Package to automatically subscribe new customers to. Let's go ahead and create a new Package with an ID of 0 so it can be easily found, give it a price of 0.00 and a default duration of 30 days.
+
+To give the User the best experience, we'll also create :PROVIDES_ACCESS_TO relationships to each of the Genre nodes.
 
 ```cypher
-CREATE (p:Package {id: 0, name: "Free Trial", price: 0.00, days: 30})
+CREATE (p:Package {
+  id: 0,
+  name: "Free Trial",
+  price: 0.00,
+  duration: duration('P30D')
+})
 WITH p
 MATCH (g:Genre)
 CREATE (p)-[:PROVIDES_ACCESS_TO]->(g)
 ```
 
-Then, in the `postRegister` method, add the call to create the subscription.  As the user will get a 30 day free trial, we'll default that value in.
-
+Then, in the `postRegister` route handler, we can add the call to the new createSubscription method on the Subscription Service.
 
 ```ts
 // auth.controller.ts
@@ -292,12 +298,12 @@ async postRegister(@Body() createUserDto: CreateUserDto) {
 }
 ```
 
-**Note:** Currently this executes two separate database transactions, but these should really take place within the same database transaction.  We'll sort that out at a later date.
+**Note:** Currently this executes two separate database transactions. That's fine for small workloads, but these two operations should really take place within the same database transaction. We'll sort that out at a later date.
 
 
 ### Testing the new Subscription Module
 
-If we run the e2e tests again, everything should still be passing.
+We've not introduced any breaking changes so running the end-to-end tests should still pass.
 
 ```
  npm run test:e2e
@@ -367,7 +373,7 @@ export class GenreController {
 
 The `GenreService` will need a `getGenres` method.  This should take the `User` as its only argument, which we will use to find the starting point for the cypher query.  From there, we will traverse the graph through to the genres that the user has permission to access.
 
-So far we've been working with Neo4j Driver's `Node` data type, but as this is public facing data, let's instead define a typescript interface to represent properties that will represent the Genre in the response.
+So far we've been working with Neo4j Driver's `Node` data type, but as this is public facing data, we should instead define a typescript interface to represent properties that will represent the Genre in the response.
 
 ```ts
 // genre.service.ts
@@ -470,19 +476,19 @@ Piecing these values together, we'll get a route handler that looks like this:
 ```ts
 // genre.controller.ts
 @UseGuards(JwtAuthGuard)
-    @Get('/:id')
-    async getGenre(
-        @Request() request, // Request object to get the User
-        @Param('id', ParseIntPipe) id: number,  // Extract the ID
-        @Query('orderBy', new DefaultValuePipe('title')) orderBy: string,  // Which property to order by
-        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,  // Page number defaulting to the first page
-        @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number  // Total number of results to return, default 10
-    ) {
-        // ...
-    }
+  @Get('/:id')
+  async getGenre(
+      @Request() request, // Request object to get the User
+      @Param('id', ParseIntPipe) id: number,  // Extract the ID
+      @Query('orderBy', new DefaultValuePipe('title')) orderBy: string,  // Which property to order by
+      @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,  // Page number defaulting to the first page
+      @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number  // Total number of results to return, default 10
+  ) {
+      // ...
+  }
 ```
 
-To process this request, we'll pass on the responsibility to the `GenreService` and create a `getMoviesForGenre` method.  Like the `getGenresForUser` method, we'll take the User node as the first parameter and add the rest of the parameters.
+To process this request, we'll pass on the responsibility to the `GenreService` by creating a `getMoviesForGenre` method.  Like the `getGenresForUser` method, we'll take the User node as the first parameter and add the rest of the parameters.
 
 ```ts
 // genre.service.ts
@@ -608,7 +614,7 @@ The response will look something like this:
 }
 ```
 
-Again, to test the features of this endpoint we can create another group in the end-to-end tests.  When provided with a valid token, the API should return 10 movies:
+Again, to test this endpoint we can create another group in the end-to-end tests.  When provided with a valid token, the API should return 10 movies:
 
 ```ts
 describe('GET /genres/:id', () => {
@@ -644,7 +650,9 @@ You can make the tests more sophisticated than this but for now it demonstrates 
 
 ## Recap
 
-In this session we've covered how to run some basic authentication using the structure of the graph.  When a user registers, they will have access to everything as part of a 30 day trial.  Once that trial expires, they will be required to purchase a subscription.  We already have the methods available to create the new subscription in the `SubscriptionService`, we just need to expose that via the REST API.  The tests are also pretty basic at the moment, so it is worth spending some time testing for different scenarios, for example if a user tries to access a Genre that their subscription doesn't provide access to.
+In this session we've covered how to run some basic authentication using the structure of the graph.  When a user registers, they will have access to everything as part of a 30 day trial.  Once that trial expires, they will be required to purchase a subscription.
+
+We already have the methods available to create the new subscription in the `SubscriptionService`, all we need to do is create another route handler to process the request.  The tests are also pretty basic at the moment, so it is worth spending some time testing for different scenarios, for example if a user tries to access a Genre that their subscription doesn't provide access to.
 
 The API now also return data in Neo4j specific formats - for example `datetime`s or `duration`s which currently take a lot of repetitive code to convert.  We'll look at this in more detail in the next session.
 
