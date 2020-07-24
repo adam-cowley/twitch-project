@@ -46,24 +46,32 @@ export class GenreService {
 
             OPTIONAL MATCH (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
 
-            OPTIONAL MATCH (g)<-[:IN_GENRE]-(m:Movie)
-                WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult )
 
-            WITH s, g, m
-            ORDER BY m.popularity DESC
-            LIMIT 10
+            WITH g, [ (g)<-[:IN_GENRE]-(m) WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult ) | m ] AS movies
+            WITH
+            g,
+            movies,
+            [ m in apoc.coll.sortNodes(movies, 'released_at')[0..5] | m ] AS latest
 
-            RETURN
-                g {
-                    .id,
-                    .name,
-                    totalMovies: size((g)<-[:IN_GENRE]-()),
-                    popular: collect(m {
-                        .*,
-                        genres: [ (m)-[:IN_GENRE]->(g) | g ],
-                        cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
-                    })
-                } AS genre
+            WITH *,
+            [ m in apoc.coll.sortNodes(movies, 'popularity') WHERE NOT m IN latest ][0..5] AS popular
+
+
+            RETURN g {
+                .id,
+                .name,
+                totalMovies: size((g)<-[:IN_GENRE]-()),
+                popular: [ m in popular | m {
+                    .*,
+                    genres: [ (m)-[:IN_GENRE]->(g) | g ],
+                    cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
+                }],
+                latest: [ m in popular | m {
+                    .*,
+                    genres: [ (m)-[:IN_GENRE]->(g) | g ],
+                    cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
+                }]
+            } AS genre
         `, {
             userId,
             genreId: int(genreId),
