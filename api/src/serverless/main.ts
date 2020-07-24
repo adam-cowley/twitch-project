@@ -11,9 +11,9 @@ import { ValidationPipe } from '@nestjs/common';
 import { Neo4jErrorInterceptor } from '../neo4j/neo4j-error.interceptor';
 import { Neo4jTypeInterceptor } from '../neo4j/neo4j-type.interceptor';
 import express from 'express';
+import { ConfigService } from '@nestjs/config';
 
 let cachedServer: Server;
-
 
 async function bootstrapServer(): Promise<Server> {
     if (!cachedServer) {
@@ -23,6 +23,24 @@ async function bootstrapServer(): Promise<Server> {
         nestApp.use(eventContext());
         nestApp.useGlobalPipes(new ValidationPipe());
         nestApp.useGlobalInterceptors(new Neo4jErrorInterceptor(), new Neo4jTypeInterceptor());
+
+
+        const configService = nestApp.get(ConfigService)
+
+        console.log({
+            scheme: configService.get('NEO4J_SCHEME'),
+            host: configService.get('NEO4J_HOST'),
+            port: configService.get('NEO4J_PORT'),
+            username: configService.get('NEO4J_USERNAME'),
+            password: configService.get('NEO4J_PASSWORD'),
+            database: configService.get('NEO4J_DATABASE'),
+          });
+
+
+
+
+
+
         await nestApp.init();
         cachedServer = createServer(expressApp);
     }
