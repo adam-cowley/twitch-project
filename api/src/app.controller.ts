@@ -1,10 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Neo4jService } from './neo4j/neo4j.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService, private neo4jService: Neo4jService) {}
+  constructor(
+    private readonly appService: AppService,
+    private neo4jService: Neo4jService,
+    private configService: ConfigService,
+    ) {}
 
   @Get()
   async getHello(): Promise<string> {
@@ -12,6 +17,16 @@ export class AppController {
     return greeting
   }
 
+
+  @Get('/config')
+  async getConfig() {
+    return {
+      scheme: this.configService.get('NEO4J_SCHEME'),
+      host: this.configService.get('NEO4J_HOST'),
+      port: this.configService.get('NEO4J_PORT'),
+      username: this.configService.get('NEO4J_USERNAME'),
+    }
+  }
 
 
   @Get('/test')
