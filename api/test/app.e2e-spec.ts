@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { Neo4jService } from '../src/neo4j/neo4j.service';
 import { Neo4jTypeInterceptor } from '../src/neo4j/neo4j-type.interceptor';
+import { Neo4jErrorInterceptor } from '../src/neo4j/neo4j-error.interceptor';
 
 describe('AppController (e2e)', () => {
     let app: INestApplication;
@@ -15,7 +16,7 @@ describe('AppController (e2e)', () => {
 
         app = moduleFixture.createNestApplication();
         app.useGlobalPipes(new ValidationPipe());
-        app.useGlobalInterceptors(new Neo4jTypeInterceptor());
+        app.useGlobalInterceptors(new Neo4jErrorInterceptor(), new Neo4jTypeInterceptor());
         await app.init();
     });
 
@@ -75,6 +76,22 @@ describe('AppController (e2e)', () => {
                     })
             })
 
+            it('should require a unique username and password', () => {
+                return request(app.getHttpServer())
+                    .post('/auth/register')
+                    .set('Accept', 'application/json')
+                    .send({
+                        email,
+                        password,
+                        dateOfBirth: '2000-01-01',
+                        firstName: 'Adam',
+                        lastName: 'Cowley'
+                    })
+                    .expect(400)
+                    .expect(res => {
+                        expect(res.body.message).toContain('email already exists')
+                    })
+            })
         })
 
         describe('POST /auth/login', () => {

@@ -2,11 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { Neo4jTypeInterceptor } from './neo4j/neo4j-type.interceptor';
+import { Neo4jErrorInterceptor } from './neo4j/neo4j-error.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
-  app.useGlobalInterceptors(new Neo4jTypeInterceptor());
+  app.useGlobalInterceptors(new Neo4jErrorInterceptor(), new Neo4jTypeInterceptor());
 
   await app.listen(3000);
 }

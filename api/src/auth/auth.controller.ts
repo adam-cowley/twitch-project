@@ -1,10 +1,11 @@
-import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, UseInterceptors } from '@nestjs/common';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserService } from '../user/user.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { Neo4jErrorInterceptor } from '../neo4j/neo4j-error.interceptor';
 
 @Controller('auth')
 export class AuthController {
