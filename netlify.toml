@@ -1,0 +1,11 @@
+[build]
+base="api"
+command="npm run build"
+functions="dist/serverless"
+publish="public"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/main"
+  status = 200
+  force = true
