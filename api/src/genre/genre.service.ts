@@ -49,12 +49,12 @@ export class GenreService {
 
             WITH g, [ (g)<-[:IN_GENRE]-(m) WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult ) | m ] AS movies
             WITH
-            g,
-            movies,
-            [ m in apoc.coll.sortNodes(movies, 'released_at')[0..5] | m ] AS latest
+                g,
+                movies,
+                [ m in apoc.coll.sortNodes(movies, 'release_date')[0..5] WHERE exists(m.release_date) | m ] AS latest
 
             WITH *,
-            [ m in apoc.coll.sortNodes(movies, 'popularity') WHERE NOT m IN latest ][0..5] AS popular
+                [ m in apoc.coll.sortNodes(movies, 'popularity') WHERE exists(m.popularity) AND NOT m IN latest ][0..5] AS popular
 
 
             RETURN g {
