@@ -210,7 +210,7 @@ describe('AppController (e2e)', () => {
                     .expect(res => {
                         expect(res.body.id).toEqual(genreId)
                         expect(res.body.popular).toBeInstanceOf(Array)
-                        expect(res.body.popular.length).toEqual(10)
+                        expect(res.body.popular.length).toEqual(5)
                         expect(res.body.popular[0].popularity).toBeGreaterThanOrEqual(res.body.popular[0].popularity)
                     })
             })

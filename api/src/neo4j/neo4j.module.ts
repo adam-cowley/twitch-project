@@ -4,6 +4,7 @@ import { Neo4jService } from './neo4j.service';
 import { Neo4jConfig } from './neo4j-config.interface';
 import { NEO4J_CONFIG, NEO4J_DRIVER } from './neo4j.constants';
 import { createDriver } from './neo4j.util';
+import { Neo4jTransactionInterceptor } from './neo4j-transaction.interceptor';
 
 @Module({})
 export class Neo4jModule {
@@ -26,6 +27,7 @@ export class Neo4jModule {
             ],
             exports: [
                 Neo4jService,
+                Neo4jTransactionInterceptor,
             ]
         }
     }
