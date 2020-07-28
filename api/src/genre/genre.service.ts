@@ -41,11 +41,9 @@ export class GenreService {
     async getGenreDetails(user: User, genreId: number) {
         const userId: string = (<Record<string, any>> user.properties).id
         const res = await this.neo4jService.read(`
-            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
+            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p),
+                (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
             WHERE s.expiresAt >= datetime()
-
-            OPTIONAL MATCH (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
-
 
             WITH g, [ (g)<-[:IN_GENRE]-(m) WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult ) | m ] AS movies
             WITH
@@ -78,9 +76,6 @@ export class GenreService {
         })
 
         if ( res.records.length == 0 ) {
-            throw new UnauthorizedException('You have no active subscriptions')
-        }
-        else if ( !res.records[0].get('genre') ) {
             throw new NotFoundException(`Cannot find genre with ID ${genreId}`)
         }
 

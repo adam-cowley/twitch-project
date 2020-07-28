@@ -8,10 +8,10 @@ import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { Neo4jErrorInterceptor } from '../neo4j/neo4j-error.interceptor';
 import { Neo4jTypeInterceptor } from '../neo4j/neo4j-type.interceptor';
 import express from 'express';
 import { ConfigService } from '@nestjs/config';
+import { Neo4jErrorFilter } from '../neo4j/neo4j-error.filter';
 
 let cachedServer: Server;
 
@@ -22,7 +22,8 @@ async function bootstrapServer(): Promise<Server> {
         nestApp.setGlobalPrefix('api')
         nestApp.use(eventContext());
         nestApp.useGlobalPipes(new ValidationPipe());
-        nestApp.useGlobalInterceptors(new Neo4jErrorInterceptor(), new Neo4jTypeInterceptor());
+        nestApp.useGlobalInterceptors(new Neo4jTypeInterceptor());
+        nestApp.useGlobalFilters(new Neo4jErrorFilter());
 
         await nestApp.init();
         cachedServer = createServer(expressApp);

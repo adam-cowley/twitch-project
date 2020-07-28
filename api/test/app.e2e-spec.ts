@@ -4,7 +4,7 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { Neo4jService } from '../src/neo4j/neo4j.service';
 import { Neo4jTypeInterceptor } from '../src/neo4j/neo4j-type.interceptor';
-import { Neo4jErrorInterceptor } from '../src/neo4j/neo4j-error.interceptor';
+import { Neo4jErrorFilter } from '../src/neo4j/neo4j-error.filter';
 
 describe('AppController (e2e)', () => {
     let app: INestApplication;
@@ -16,18 +16,12 @@ describe('AppController (e2e)', () => {
 
         app = moduleFixture.createNestApplication();
         app.useGlobalPipes(new ValidationPipe());
-        app.useGlobalInterceptors(new Neo4jErrorInterceptor(), new Neo4jTypeInterceptor());
+        app.useGlobalInterceptors(new Neo4jTypeInterceptor());
+        app.useGlobalFilters(new Neo4jErrorFilter());
         await app.init();
     });
 
     afterEach(() => app.close())
-
-    // it('/ (GET)', () => {
-    //   return request(app.getHttpServer())
-    //     .get('/')
-    //     .expect(200)
-    //     .expect('Hello World!');
-    // });
 
     describe('Auth', () => {
         const email = `${Math.random()}@adamcowley.co.uk`
@@ -76,7 +70,7 @@ describe('AppController (e2e)', () => {
                     })
             })
 
-            it('should require a unique username and password', () => {
+            it('should return HTTP 400 when email is already taken', () => {
                 return request(app.getHttpServer())
                     .post('/auth/register')
                     .set('Accept', 'application/json')
@@ -89,7 +83,7 @@ describe('AppController (e2e)', () => {
                     })
                     .expect(400)
                     .expect(res => {
-                        expect(res.body.message).toContain('email already exists')
+                        expect(res.body.message).toContain('email already taken')
                     })
             })
         })
