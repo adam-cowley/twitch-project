@@ -1,31 +1,31 @@
 import axios, { AxiosRequestConfig } from 'axios'
 import { computed, ref } from 'vue'
+import { useAuth, AUTH_TOKEN } from './auth'
 
 
-const config = (access_token?: string): AxiosRequestConfig => {
-  const config: AxiosRequestConfig = {}
+export const useApiWithAuth = (endpoint: string) => {
+  const { user } = useAuth()
 
-  if ( access_token ) config.headers = {
-    Authorization: `Bearer ${access_token}`
-  }
-
-  return config
+  return useApi(endpoint, user?.value ? user.value[ AUTH_TOKEN ] : undefined)
 }
 
-export const useApi = (endpoint: string) => {
+export const useApi = (endpoint: string, access_token?: string) => {
   const api = axios.create({
-    baseURL: 'http://localhost:3000/'
+    baseURL: 'http://localhost:3000/',
+    headers: {
+      Authorization: access_token ? `Bearer ${access_token}` : undefined,
+    }
   })
 
   const data = ref()
   const loading = ref(false)
   const error = ref()
 
-  const post = (payload?: Record<string, any>, access_token?: string) => {
+  const post = (payload?: Record<string, any>) => {
     loading.value = true
     error.value = undefined
 
-    return api.post(endpoint, payload, config(access_token))
+    return api.post(endpoint, payload)
       .then(res => data.value = res.data)
       .catch(e => {
         error.value = e
@@ -35,7 +35,7 @@ export const useApi = (endpoint: string) => {
       .finally(() => loading.value = false)
   }
 
-  const get = (query?: Record<string, any>, access_token?: string) => {
+  const get = (query?: Record<string, any>, config?: AxiosRequestConfig) => {
     loading.value = true
     error.value = undefined
 
@@ -47,8 +47,7 @@ export const useApi = (endpoint: string) => {
         .join('&')
     }
 
-
-    return api.get(endpoint + queryString, config(access_token))
+    return api.get(endpoint + queryString, config)
       .then(res => data.value = res.data)
       .catch(e => {
         error.value = e

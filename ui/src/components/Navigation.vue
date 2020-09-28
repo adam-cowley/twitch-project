@@ -1,5 +1,6 @@
 <template>
-    <header class="bg-black p-2 h-16 flex flex-column justify-between items-center">
+    <header class="bg-black p-2 h-16 relative z-50">
+        <div class="container m-auto flex flex-column justify-between items-center">
         <h1 class="flex-grow-0 mr-4">
           <router-link to="/">
             <img src="../assets/neoflix-logo.png" alt="Neoflix" />
@@ -22,9 +23,10 @@
             </template>
             <template v-else>
               <li><router-link class="block px-4 py-2" to="/login">Login</router-link></li>
-              <li><router-link class="block px-4 py-2" to="/register">Register</router-link></li>
+              <li><router-link class="block px-4 py-2 bg-red-600 hover:bg-red-500 font-bold rounded-md" to="/register">Register</router-link></li>
             </template>
         </ul>
+        </div>
     </header>
 </template>
 

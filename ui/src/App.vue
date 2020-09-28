@@ -1,8 +1,6 @@
 <template>
   <div id="app">
-    <div class="loading fixed inset-0 bg-blue-200" v-if="authenticating">
-      Loading...
-    </div>
+    <loading v-if="authenticating" />
     <div v-else>
       <navigation />
       <router-view />
@@ -14,9 +12,9 @@
 import { defineComponent, watch } from "vue";
 import { useAuth } from "./modules/auth";
 // @ts-ignore
-import Navigation from '@/components/Header';
+import Navigation from '@/components/Navigation';
 import { useRouter } from "vue-router";
-// import Login from './components/Login';
+
 
 export default defineComponent({
   components: { Navigation },
@@ -36,28 +34,5 @@ export default defineComponent({
 </script>>
 
 <style>
-body {
-  @apply bg-gray-800 text-white;
-}
 
-/* #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
-
-#nav {
-  padding: 30px;
-}
-
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-#nav a.router-link-exact-active {
-  color: #42b983;
-} */
 </style>

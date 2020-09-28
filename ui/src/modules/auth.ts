@@ -1,9 +1,9 @@
 // import api from './api'
-import { inject, reactive, toRefs, watch } from 'vue'
-import { useApi } from './api'
+import { computed, inject, reactive, toRefs, watch } from 'vue'
+import { useApi, useApiWithAuth } from './api'
 
 const AUTH_KEY = 'neoflix_token'
-const AUTH_TOKEN = 'access_token'
+export const AUTH_TOKEN = 'access_token'
 
 interface User {
     id: string;
@@ -32,8 +32,9 @@ const token = window.localStorage.getItem(AUTH_KEY)
 
 if ( token ) {
     const { loading, error, data, get } = useApi('/auth/user')
+    state.authenticating = true
 
-    get({}, token)
+    get({}, { headers:{ Authorization: `Bearer ${token}` } })
 
     watch([ loading ], () => {
         if ( error.value ) {
@@ -42,8 +43,8 @@ if ( token ) {
         else if ( data.value ) {
             state.user = data.value
         }
-        console.log(loading.value, error.value, data.value);
 
+        state.authenticating = false
     })
 }
 
@@ -62,6 +63,7 @@ export const useAuth = () => {
         window.localStorage.removeItem(AUTH_KEY)
         return Promise.resolve(state.user = undefined)
     }
+
 
     return {
         setUser,

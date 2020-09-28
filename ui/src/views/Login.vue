@@ -132,11 +132,11 @@ interface LoginPayload {
 
 export default defineComponent({
   setup() {
-    const { loading, data, error, post, errorMessage, errorFields } = useApi(
+    const { loading, data, post, errorMessage } = useApi(
       "auth/login"
     );
 
-    const { user, setUser, authenticating } = useAuth();
+    const { setUser } = useAuth();
     const router = useRouter();
 
     const payload = reactive<LoginPayload>({

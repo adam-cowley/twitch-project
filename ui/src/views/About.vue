@@ -2,10 +2,7 @@
   <div class="about">
     <h1>This is an about page</h1>
 
-    <p>email: {{ user.email }}</p>
-    <p>dob: {{ user.dateOfBirth }}</p>
-    <p>first: {{ user.firstName }}</p>
-    <p>last: {{ user.lastName }}</p>
+   <loading />
   </div>
 </template>
 

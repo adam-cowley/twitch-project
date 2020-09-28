@@ -19,15 +19,19 @@ export class GenreService {
             MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
             WHERE s.expiresAt >= datetime()
 
-            OPTIONAL MATCH  (p)-[:PROVIDES_ACCESS_TO]->(g)
+            OPTIONAL MATCH  (p)-[:PROVIDES_ACCESS_TO]->(g)<-[:IN_GENRE]-(m)
+            WHERE exists(m.poster)
 
-            WITH p, g
-            ORDER BY g.name ASC
+            WITH p, g, m ORDER BY g.name, m.imdbRating DESC
+
+            WITH p, g, collect(m) AS movies
+            WITH p, g, movies[0] as topMovie
 
             RETURN p, collect(g {
                 .id,
                 .name,
-                totalMovies: size((g)<-[:IN_GENRE]-())
+                totalMovies: size((g)<-[:IN_GENRE]-()),
+                poster: topMovie.poster
             }) AS genres
         `, { userId })
 
@@ -45,15 +49,14 @@ export class GenreService {
                 (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
             WHERE s.expiresAt >= datetime()
 
-            WITH g, [ (g)<-[:IN_GENRE]-(m) WHERE ( u.dateOfBirth <= datetime() - duration('P18Y') OR NOT m:Adult ) | m ] AS movies
+            WITH g, [ (g)<-[:IN_GENRE]-(m) WHERE ( u.dateOfBirth <= date() - duration('P18Y') OR NOT m:Adult ) | m ] AS movies
             WITH
                 g,
                 movies,
-                [ m in apoc.coll.sortNodes(movies, 'release_date')[0..5] WHERE exists(m.release_date) | m ] AS latest
+                apoc.coll.sortNodes([ m IN movies WHERE exists(m.release_date) ], 'release_date')[0..4] AS latest
 
             WITH *,
-                [ m in apoc.coll.sortNodes(movies, 'popularity') WHERE exists(m.popularity) AND NOT m IN latest ][0..5] AS popular
-
+                apoc.coll.sortNodes([ m IN movies WHERE  exists(m.popularity) AND NOT m IN latest ], 'popularity')[0..4] AS popular
 
             RETURN g {
                 .id,
@@ -62,12 +65,12 @@ export class GenreService {
                 popular: [ m in popular | m {
                     .*,
                     genres: [ (m)-[:IN_GENRE]->(g) | g ],
-                    cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
+                    cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..4]
                 }],
-                latest: [ m in popular | m {
+                latest: [ m in latest | m {
                     .*,
                     genres: [ (m)-[:IN_GENRE]->(g) | g ],
-                    cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..5]
+                    cast: [ (m)<-[:CAST_FOR]-(p) | p ][0..4]
                 }]
             } AS genre
         `, {

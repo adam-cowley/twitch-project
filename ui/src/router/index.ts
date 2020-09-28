@@ -15,25 +15,37 @@ const routes = [
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/Register.vue'),
+    component: () => import(/* webpackChunkName: "register" */ '../views/Register.vue'),
     meta: { requiresAuth: false },
   },
   {
     path: '/login',
     name: 'login',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Login.vue'),
+    component: () => import(/* webpackChunkName: "login" */ '../views/Login.vue'),
     meta: { requiresAuth: false },
   },
   {
     path: '/logout',
     name: 'logout',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Logout.vue'),
+    component: () => import(/* webpackChunkName: "logout" */ '../views/Logout.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/about',
     name: 'about',
     component: () => import(/* webpackChunkName: "about" */ '../views/About.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/genres/:id',
+    name: 'genres.view',
+    component: () => import(/* webpackChunkName: "genres.view" */ '../views/genres/View.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/movies/:id',
+    name: 'movies.view',
+    component: () => import(/* webpackChunkName: "movies.view" */ '../views/movies/View.vue'),
     meta: { requiresAuth: true },
   },
   {

@@ -1,8 +1,9 @@
 [build]
-base="api"
-command="npm run build"
-functions="dist/serverless"
-publish="public"
+
+command="./build.sh"
+functions="api/dist/serverless"
+publish="ui/public"
+
 
 [[redirects]]
   from = "/api/*"
