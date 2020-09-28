@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { UserService, User } from '../user/user.service';
+import { UserService } from '../user/user.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '../user/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,7 @@ export class AuthService {
     async validateUser(email: string, password: string) {
         const user = await this.userService.findByEmail(email);
 
-        if ( user !== undefined && await this.encryptionService.compare(password, (<Record<string, any>> user.properties).password) ) {
+        if ( user !== undefined && await this.encryptionService.compare(password, user.getPassword()) ) {
             return user;
         }
 
@@ -24,7 +25,7 @@ export class AuthService {
 
     async createToken(user: User) {
         // Deconstruct the properties
-        const { id, email, dateOfBirth, firstName, lastName } = <Record<string, any>> user.properties
+        const { id, email, dateOfBirth, firstName, lastName } =  user.toJson()
 
         // Encode that into a JWT
         return {

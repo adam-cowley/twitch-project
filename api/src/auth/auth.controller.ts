@@ -34,22 +34,34 @@ export class AuthController {
 
         await this.subscriptionService.createSubscription(transaction, user, 0)
 
-        return await this.authService.createToken(user)
+        const { access_token } = await this.authService.createToken(user)
+
+        return {
+            ...user.toJson(),
+            access_token
+        }
     }
 
     @UseGuards(LocalAuthGuard)
     @Post('login')
     async postLogin(@Request() request) {
-        return await this.authService.createToken(request.user)
+        const user = request.user
+        const { access_token } = await this.authService.createToken(request.user)
+
+        return {
+            ...user.toJson(),
+            access_token
+        }
     }
 
     @UseGuards(JwtAuthGuard)
     @Get('user')
     async getUser(@Request() request) {
-        const { id, email, dateOfBirth, firstName, lastName } = request.user.properties
+        const { access_token } = await this.authService.createToken(request.user)
+
         return {
-            id, email, firstName, lastName,
-            dateOfBirth: (new Date(dateOfBirth)).toISOString()
+            ...request.user.toJson(),
+            access_token,
         }
     }
 }

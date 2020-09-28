@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { Node, types, Transaction } from 'neo4j-driver'
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { EncryptionService } from '../encryption/encryption.service';
+import { User } from './user.entity';
 
-export type User = Node
+
 
 @Injectable()
 export class UserService {
@@ -19,7 +20,7 @@ export class UserService {
             RETURN u
         `, { email })
 
-        return res.records.length == 1 ? res.records[0].get('u') : undefined
+        return res.records.length == 1 ? new User( res.records[0].get('u') ) : undefined
     }
 
     async create(databaseOrTransaction: string | Transaction, email: string, password: string, dateOfBirth: Date, firstName?: string, lastName?: string): Promise<User> {
@@ -37,7 +38,7 @@ export class UserService {
             },
         }, databaseOrTransaction)
 
-        return res.records[0].get('u')
+        return new User( res.records[0].get('u') )
     }
 
 }

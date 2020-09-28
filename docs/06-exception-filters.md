@@ -202,46 +202,45 @@ Then we can copy down the same test from `should return HTTP 200 successful on s
 
 We'll need to update the status code to be 400 instead of 201, and the body of the response should include an array of error messages including one saying that the email address has already been taken:
 
-
 ```ts
 it('should return HTTP 200 successful on successful registration', () => {
-                return request(app.getHttpServer())
-                    .post('/auth/register')
-                    .set('Accept', 'application/json')
-                    .send({
-                        email,
-                        password,
-                        dateOfBirth: '2000-01-01',
-                        firstName: 'Adam',
-                        lastName: 'Cowley'
-                    })
-                    .expect(201)
-                    .expect(res => {
-                        expect(res.body.access_token).toBeDefined()
-                    })
-            })
+    return request(app.getHttpServer())
+        .post('/auth/register')
+        .set('Accept', 'application/json')
+        .send({
+            email,
+            password,
+            dateOfBirth: '2000-01-01',
+            firstName: 'Adam',
+            lastName: 'Cowley'
+        })
+        .expect(201)
+        .expect(res => {
+            expect(res.body.access_token).toBeDefined()
+        })
+})
 
-            it('should return HTTP 400 when email is already taken', () => {
-                return request(app.getHttpServer())
-                    .post('/auth/register')
-                    .set('Accept', 'application/json')
-                    .send({
-                        email,
-                        password,
-                        dateOfBirth: '2000-01-01',
-                        firstName: 'Adam',
-                        lastName: 'Cowley'
-                    })
-                    // Should return 400 instead of 201
-                    .expect(400)
-                    .expect(res => {
-                        // The body should return the `already taken` error
-                        expect(res.body.message).toContain('email already taken')
-                    })
-            })
+it('should return HTTP 400 when email is already taken', () => {
+    return request(app.getHttpServer())
+        .post('/auth/register')
+        .set('Accept', 'application/json')
+        .send({
+            email,
+            password,
+            dateOfBirth: '2000-01-01',
+            firstName: 'Adam',
+            lastName: 'Cowley'
+        })
+        // Should return 400 instead of 201
+        .expect(400)
+        .expect(res => {
+            // The body should return the `already taken` error
+            expect(res.body.message).toContain('email already taken')
+        })
+})
 ```
 
-The tests should now pass:
+If everything has been registered successfully, the npm run test:e2e should report that all of our tests are passing:
 
 ```sh
 npm run test:e2e

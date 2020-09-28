@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
-import { User } from '../user/user.service';
+import { User } from '../user/user.entity';
 import { int } from 'neo4j-driver';
 
 export interface Genre {
@@ -14,7 +14,7 @@ export class GenreService {
     constructor(private readonly neo4jService: Neo4jService) {}
 
     async getGenresForUser(user: User): Promise<Genre[]> {
-        const userId: string = (<Record<string, any>> user.properties).id
+        const userId = user.getId()
         const res = await this.neo4jService.read(`
             MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
             WHERE s.expiresAt >= datetime()
@@ -39,7 +39,7 @@ export class GenreService {
     }
 
     async getGenreDetails(user: User, genreId: number) {
-        const userId: string = (<Record<string, any>> user.properties).id
+        const userId = user.getId()
         const res = await this.neo4jService.read(`
             MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p),
                 (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
@@ -83,7 +83,7 @@ export class GenreService {
     }
 
     async getMoviesForGenre(user: User, genreId: number, orderBy: string, limit: number, page: number) {
-        const userId: string = (<Record<string, any>> user.properties).id
+        const userId = user.getId()
         const res = await this.neo4jService.read(`
             MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
             WHERE s.expiresAt >= datetime()

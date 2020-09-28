@@ -9,6 +9,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new Neo4jTypeInterceptor());
   app.useGlobalFilters(new Neo4jErrorFilter());
+  app.enableCors()
 
   await app.listen(3000);
 }
