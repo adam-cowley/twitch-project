@@ -1,8 +1,8 @@
 [build]
-
+base="./"
 command="./build.sh"
 functions="api/dist/serverless"
-publish="ui/public"
+publish="api/public"
 
 
 [[redirects]]

@@ -1,7 +1,10 @@
 #!/bin/bash
 
-cd api && npm run build
+# Build Prod
+cd api && ENV=production npm run build
 
+# Build UI
 cd ../ui && ENV=production npm run build
 
-cp -R dist/* ../api/dist/public
+# Copy UI to Server
+cp -R dist/* ../api/public
