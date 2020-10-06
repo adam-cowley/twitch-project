@@ -1,2 +1,4 @@
 .DS_Store
 node_modules/
+.netlify/
+api/env.production
