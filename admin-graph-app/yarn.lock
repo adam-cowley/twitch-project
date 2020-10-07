@@ -10485,12 +10485,13 @@ url@^0.11.0:
     punycode "1.3.2"
     querystring "0.2.0"
 
-use-neo4j@^0.2.3:
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/use-neo4j/-/use-neo4j-0.2.3.tgz#6ec3e510c06032a5f08c3e37b81cc0560f4b9364"
-  integrity sha512-PMRwQmBljGhe4U36WE5XuIWg4gMjfr3UEcF86Bxh+q8sqebvWZIDP0aFxmCNcADdhGQj1fp4UpOMSfJtQQ1eFA==
+use-neo4j@^0.2.12:
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/use-neo4j/-/use-neo4j-0.2.12.tgz#3a64f6a8c65f776312351e2b2a7b9d3ce6ae7847"
+  integrity sha512-qGaq2NqW9e8WY3oXXuR3AjkCpil8jSCZ+0xruwv/Jz9oCList6Ep6I3DzBjHgAbFRsZcu66Dl5bTABUNLUnYrQ==
   dependencies:
     neo4j-driver "^4.1.2"
+    react-dom "^16.13.1"
 
 use@^3.1.0:
   version "3.1.1"

@@ -7,18 +7,19 @@ import App from './App';
 import * as serviceWorker from './serviceWorker';
 
 import { Neo4jProvider,
-  // createDriver
+  createDriver
 } from 'use-neo4j'
 
-// const driver = createDriver('neo4j', 'localhost', 7687, 'neo4j', 'neo')
+const driver = createDriver('neo4j', 'localhost', 7687, 'neo4j', 'neo')
 
 ReactDOM.render(
-  <React.StrictMode>
-    <Neo4jProvider>
+  // <React.StrictMode>
+    <Neo4jProvider driver={driver}>
       <App />
     </Neo4jProvider>
 
-  </React.StrictMode>,
+  // </React.StrictMode>
+  ,
   document.getElementById('root')
 );
 
