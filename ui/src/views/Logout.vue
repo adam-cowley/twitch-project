@@ -17,7 +17,6 @@ interface LoginPayload {
     rememberMe: boolean;
 }
 
-
 export default defineComponent({
     setup() {
         const { logout } = useAuth()
