@@ -36,3 +36,11 @@
     transform: rotate(360deg);
   }
 }
+
+.main.container {
+  padding-top: 7em;
+}
+
+.ui.table .label {
+  margin-right: .2rem;
+}
