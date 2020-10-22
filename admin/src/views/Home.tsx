@@ -1,6 +1,6 @@
 /* eslint-disable */
-import React, { useEffect, useMemo, useState } from 'react'
-import { Container, Form, Grid, Segment, Loader, Card } from 'semantic-ui-react'
+import React, { useEffect, useState } from 'react'
+import { Container, Form, Grid, Segment, Loader, Card, Message } from 'semantic-ui-react'
 
 import { useReadCypher } from 'use-neo4j';
 import Movie from '../components/Movie'
@@ -10,7 +10,7 @@ interface SearchResultsProps {
 }
 
 const SearchResults = (props: SearchResultsProps) => {
-    const { loading, records, run, } = useReadCypher('MATCH (m:Movie) WHERE m.title CONTAINS $query RETURN m LIMIT 12', props)
+    const { loading, records, error, run, } = useReadCypher('MATCH (m:Movie) WHERE m.title CONTAINS $query RETURN m LIMIT 12', props)
 
     useEffect(() => {
         run(props)
@@ -28,7 +28,9 @@ const SearchResults = (props: SearchResultsProps) => {
 
     if ( loading ) return <Loader />
 
-    if ( !records?.length )  {
+    else if ( error ) return <Message negative>{ error.message }</Message>
+
+    else if ( !records?.length )  {
         return <Card style={{ width: '100%', maxWidth: 'auto' }}><Card.Content>No results found</Card.Content></Card>
     }
 

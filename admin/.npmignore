@@ -1,0 +1,8 @@
+*.tgz
+src
+node_modules
+public
+.env
+.gitignore
+tsconfig.json
+yarn.lock

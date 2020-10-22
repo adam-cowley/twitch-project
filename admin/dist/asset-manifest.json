@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "./static/css/main.becd11ee.chunk.css",
+    "main.js": "./static/js/main.e0ffa7c6.chunk.js",
+    "main.js.map": "./static/js/main.e0ffa7c6.chunk.js.map",
+    "runtime-main.js": "./static/js/runtime-main.a90bc862.js",
+    "runtime-main.js.map": "./static/js/runtime-main.a90bc862.js.map",
+    "static/css/2.2bf7be7f.chunk.css": "./static/css/2.2bf7be7f.chunk.css",
+    "static/js/2.b153f354.chunk.js": "./static/js/2.b153f354.chunk.js",
+    "static/js/2.b153f354.chunk.js.map": "./static/js/2.b153f354.chunk.js.map",
+    "index.html": "./index.html",
+    "precache-manifest.eb3d32521e46a2b8b3e2bbb6bce06eb9.js": "./precache-manifest.eb3d32521e46a2b8b3e2bbb6bce06eb9.js",
+    "service-worker.js": "./service-worker.js",
+    "static/css/2.2bf7be7f.chunk.css.map": "./static/css/2.2bf7be7f.chunk.css.map",
+    "static/css/main.becd11ee.chunk.css.map": "./static/css/main.becd11ee.chunk.css.map",
+    "static/js/2.b153f354.chunk.js.LICENSE.txt": "./static/js/2.b153f354.chunk.js.LICENSE.txt",
+    "static/media/semantic.min.css": "./static/media/outline-icons.ef60a4f6.woff",
+    "static/media/neoflix-logo.png": "./static/media/neoflix-logo.1383c259.png"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.a90bc862.js",
+    "static/css/2.2bf7be7f.chunk.css",
+    "static/js/2.b153f354.chunk.js",
+    "static/css/main.becd11ee.chunk.css",
+    "static/js/main.e0ffa7c6.chunk.js"
+  ]
+}

@@ -1,5 +1,5 @@
 import React from 'react'
-import CypherTable from '../components/cypher-table'
+import CypherTable from '../components/cypher/table'
 
 export default function Packages() {
     const cypher = `
@@ -37,15 +37,11 @@ export default function Packages() {
                 link: '/packages/'+ p.id
             } AS actionEdit
         ORDER BY p.name
+        SKIP $skip
         LIMIT $limit
     `
 
     return (
-        <div>
-            <CypherTable cypher={cypher} limit={10} />
-
-
-        </div>
-
+        <CypherTable cypher={cypher} limit={3} />
     )
 }

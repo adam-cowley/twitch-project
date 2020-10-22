@@ -1,6 +1,7 @@
 {
   "name": "admin-graph-app",
-  "version": "0.1.0",
+  "version": "0.1.12",
+  "homepage": "./",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
@@ -17,11 +18,11 @@
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^2.0.0",
     "typescript": "~3.7.2",
-    "use-neo4j": "^0.2.17"
+    "use-neo4j": "^0.2.21"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "rm -f *.tgz && rm -rf dist && react-scripts build && mv build dist && npm pack",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
