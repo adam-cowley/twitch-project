@@ -8,10 +8,10 @@ export default function CypherCount(props) {
     if ( number && typeof number.toNumber === 'function' ) number = number.toNumber()
 
     return (
-        <div>
+        <span>
             {props.value.icon && <Icon name={props.value.icon} size={props.size} />}
             {props.value.caption && <span>{props.value.caption}: </span>}
             {number}
-        </div>
+        </span>
     )
 }

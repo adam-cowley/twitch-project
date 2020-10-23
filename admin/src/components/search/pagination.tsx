@@ -15,7 +15,6 @@ interface SearchPaginationProps {
 }
 
 export default function SearchPagination(props: SearchPaginationProps) {
-
     return (
         <Menu>
             <Menu.Menu>

@@ -5,13 +5,14 @@ import { Link } from 'react-router-dom'
 import CypherImage from '../image'
 import CypherLabels from '../labels'
 import CypherCount from '../count'
+import CypherAction from '../action'
 
-interface CypherCardProps {
+interface CypherCardComponentProps {
     parentKey: number;
     record: Record;
 }
 
-export default function CypherCard(props: CypherCardProps) {
+export default function CypherCardComponent(props: CypherCardComponentProps) {
     const content = props.record.keys.map((type, index) => {
         const value = props.record.get(type)
 
@@ -30,8 +31,6 @@ export default function CypherCard(props: CypherCardProps) {
         </Card>
     )
 }
-
-
 
 function CypherCardOverview({ parentKey, value }) {
     return (
@@ -78,6 +77,7 @@ function CypherCardExtra({ parentKey, value }) {
     const extra = value.map((row, index) => {
         if ( row.type === 'count' ) return <CypherCount key={`${parentKey}-${index}`} value={row} />
         else if ( row.type === 'labels' ) return <CypherLabels parentKey={`${parentKey}-${index}`} value={row} />
+        else if ( row.type === 'action' ) return <CypherAction key={`${parentKey}-${index}`} value={row} />
 
         return <pre key={`${parentKey}-${index}`}>{JSON.stringify(value, null, 2)}</pre>
     })

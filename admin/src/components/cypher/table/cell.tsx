@@ -17,7 +17,7 @@ function CypherTableOverview({ key, value }) {
     return (
         <Table.Cell key={key}>
             <Link to={value.link}>
-                <Icon circular inverted rounded={'true'} color='teal' name={value.icon} size='large' style={{float: 'left', marginRight: '6px'}} />
+                <Icon circular inverted color='teal' name={value.icon} size='large' style={{float: 'left', marginRight: '6px'}} />
 
                 <Header style={{marginTop: 0, marginBottom: 0}}>{value.name}</Header>
                 <Header.Subheader>

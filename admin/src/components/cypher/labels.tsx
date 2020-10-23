@@ -17,9 +17,9 @@ export default function CypherLabels({ parentKey, value }) {
     const plus = length > limit ? ` +${length - limit}` : ''
 
     return (
-        <div>
+        <span>
             {content} {plus}
-        </div>
+        </span>
     )
 }
 

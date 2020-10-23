@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
 import { useLazyWriteCypher, useReadCypher } from 'use-neo4j'
-import { int } from 'neo4j-driver'
 import { Container, Dimmer, Segment, Loader, Header, Form, Button, Message } from 'semantic-ui-react'
-
 
 function EditMovie({ movie }) {
     const [ error, setError ] = useState<Error>()
@@ -41,9 +39,9 @@ function EditMovie({ movie }) {
 }
 
 export default function Movie({ match }) {
-    const { loading, first } = useReadCypher(
-        'MATCH (m:Movie) WHERE id(m) = $id RETURN m',
-        { id: int(match.params.id) }
+    const { loading, error, first } = useReadCypher(
+        'MATCH (m:Movie) WHERE m.movieId = $id RETURN m',
+        { id: match.params.id }
     )
 
     if (loading) {
@@ -53,6 +51,13 @@ export default function Movie({ match }) {
                     <Loader />
                 </Dimmer>
             </Segment>
+        )
+    }
+
+
+    if ( error ) {
+        return (
+            <Message negative>{error.message}</Message>
         )
     }
 

@@ -1,18 +1,18 @@
 import React from "react"
 import { Container, Grid, Loader, Message, Segment } from "semantic-ui-react"
-import CypherCard from "./card"
+import CypherCard from "./component"
 
 import { SemanticWIDTHS } from "semantic-ui-react/dist/commonjs/generic"
 import { useCypherSearch } from ".."
 
 
-interface CypherCardsProps {
+interface CypherCardGridProps {
     cypher: string; // MATCH (m:Movie) WHERE m.title CONTAINS $query RETURN m
-    columns?: number;
+    columns?: SemanticWIDTHS;
     limit?: number;
     orderBy?: string[];
 }
-export default function CypherCards(props: CypherCardsProps) {
+export default function CypherCardGrid(props: CypherCardGridProps) {
     const {
         query,
         pagination,
@@ -35,7 +35,7 @@ export default function CypherCards(props: CypherCardsProps) {
     }
     else if (records && records.length) {
         // @ts-ignore
-        const columns = (props.columns || 3) as SemanticWIDTHS
+        const columns = props.columns || 3
 
         results = (
             <Grid columns={columns} doubling>

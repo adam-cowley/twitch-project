@@ -30,8 +30,8 @@ function App() {
         <main className="ui main container">
           <Switch>
             <Route exact path="/" component={Home} />
-            <Route path="/movies" component={Movies} />
-            <Route path="/movie/:id" component={Movie} />
+            <Route path="/movies/:id" component={Movie} />
+            <Route exact path="/movies" component={Movies} />
             <Route exact path="/genres" component={Genres} />
             <Route path="/genres/:id" component={GenreEdit} />
             <Route exact path="/packages" component={Packages} />

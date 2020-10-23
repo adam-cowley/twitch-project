@@ -1,62 +1,126 @@
 /* eslint-disable */
-import React, { useEffect, useState } from 'react'
-import { Container, Form, Grid, Segment, Loader, Card, Message } from 'semantic-ui-react'
-
-import { useReadCypher } from 'use-neo4j';
-import Movie from '../components/Movie'
-
-interface SearchResultsProps {
-    query: string;
-}
-
-const SearchResults = (props: SearchResultsProps) => {
-    const { loading, records, error, run, } = useReadCypher('MATCH (m:Movie) WHERE m.title CONTAINS $query RETURN m LIMIT 12', props)
-
-    useEffect(() => {
-        run(props)
-    }, [ props ])
-
-    const results = records?.map(row => {
-        const movie = row.get('m')
-
-        return (
-            <Grid.Column key={movie.identity.toNumber()}>
-                <Movie movie={movie} />
-            </Grid.Column>
-        )
-    })
-
-    if ( loading ) return <Loader />
-
-    else if ( error ) return <Message negative>{ error.message }</Message>
-
-    else if ( !records?.length )  {
-        return <Card style={{ width: '100%', maxWidth: 'auto' }}><Card.Content>No results found</Card.Content></Card>
-    }
-
-    return (
-        <Grid columns={3} doubling>
-            <Grid.Row stretched>
-                {results}
-            </Grid.Row>
-        </Grid>
-    )
-}
+import React from 'react'
+import { Card, Segment, Grid, Icon, Header } from 'semantic-ui-react'
+import BarChart from '../components/charts/bar'
+import LineChart from '../components/charts/line'
+import CypherMetric from '../components/cypher/metric'
 
 export default function Home() {
-    const [ query, setQuery ] = useState<string>('')
+
+    const cypher = `
+        MATCH (m:Movie {title: "Casino"})
+
+        RETURN
+            {
+                src: m.poster,
+                alt: m.title
+            } AS image,
+            {
+                link: '/movies/'+ m.movieId,
+                name: m.title,
+                /*
+                labels: [ (m)-[:IN_GENRE]->(g) | {
+                    link: '/genres/'+ g.id,
+                    text: g.name,
+                    class: 'label--'+ apoc.text.slug(toLower(g.name))
+                } ],
+                */
+                caption: 'Released in '+ m.release_date.year
+            } AS header,
+            { text: m.plot } AS description,
+            [
+                {
+                    type: 'count',
+                    icon: 'star',
+                    //caption: 'avg rating',
+                    number: m.imdbRating
+                },
+                {
+                    type: 'action',
+                    class: 'ui tiny right floated primary basic button',
+                    text: 'View',
+                    // icon: 'pencil',
+                    link: '/movies/'+ m.movieId
+                }
+                /*
+                ,
+                {
+                    type: 'labels',
+                    labels: [ (m)-[:IN_GENRE]->(g) | {
+                        link: '/genres/'+ g.id,
+                        text: g.name,
+                        class: 'label--'+ apoc.text.slug(toLower(g.name))
+                    } ]
+                }
+                */
+            ] AS extra
+    `
+
+    const barcypher = `
+        MATCH (g:Genre)
+        WITH g, size((g)<-[:IN_GENRE]-()) AS size ORDER BY g.name ASC
+
+        RETURN collect(g.name) AS labels,
+        [{
+            label: 'counts',
+            backgroundColor: 'black',
+            data: collect(toFloat(size))
+        }] AS datasets
+    `
+
+    const linecypher = `
+        MATCH (m:Movie)-[:IN_GENRE]->(g:Genre)
+        WHERE m.release_date.year >= 2000
+        WITH g, m.release_date.year AS year, count(*) AS count
+
+        ORDER BY year ASC
+        WITH g.name as label, g.color AS color, collect(distinct year) as years, collect({year: year, count: count}) AS counts
+
+        WITH label, years, color, [ y in years | coalesce([ c in counts where c.year = y | c.count ][0], 0)  ] AS data
+
+        RETURN years as labels, collect({label: label, borderColor: color, fill: 'transparent', data: data}) AS datasets
+    `
 
     return (
-        <Container>
-            <Segment>
-                <Form>
-                    <Form.Field>
-                        <label htmlFor="query">Search by title</label>
-                        <input type="text" value={query} onChange={e => setQuery(e.target.value)} />
-                    </Form.Field>
-                </Form>
-            </Segment>
-            <SearchResults query={query} />
-        </Container>
+        <Grid>
+            <Grid.Row stretched>
+                <Grid.Column className="eleven wide column">
+                    <Segment>
+                        <Header>Genre Distribution</Header>
+                        <BarChart cypher={barcypher} />
+                    </Segment>
+                </Grid.Column>
+
+                <Grid.Column className="five wide">
+                    <Segment>
+                        <CypherMetric cypher='MATCH (a:User) RETURN count(a) AS count' text='Users' icon='users' color='red' />
+                    </Segment>
+
+                    <Segment>
+                        <CypherMetric cypher='MATCH (a:Genre) RETURN count(a) AS count' text='Genres' icon='tags' color='red' />
+                    </Segment>
+                </Grid.Column>
+
+            </Grid.Row>
+            <Grid.Row stretched>
+
+                <Grid.Column className="eleven wide column">
+                    <Segment>
+                        <Header>Movie Releases by Year</Header>
+                        <LineChart cypher={linecypher} />
+                    </Segment>
+                </Grid.Column>
+                <Grid.Column className="five wide">
+                    <Segment>
+                        <CypherMetric cypher='MATCH (a:Movie) RETURN count(a) AS count' text='Movies' icon='film' color='red' />
+                    </Segment>
+                    <Segment>
+                        <CypherMetric cypher='MATCH (a:Actor) RETURN count(a) AS count' text='Actors' icon='user secret' color='red' />
+                    </Segment>
+                </Grid.Column>
+            </Grid.Row>
+        </Grid >
     )
 }
+
+

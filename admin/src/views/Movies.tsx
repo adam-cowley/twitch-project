@@ -1,7 +1,7 @@
 import React from 'react'
-import CypherCards from '../components/cypher/cards'
+import CypherCardGrid from '../components/cypher/cards/grid'
 
-export default function Packages() {
+export default function Movies() {
     const cypher = `
         MATCH (m:Movie)
         WHERE m.title contains $query
@@ -12,7 +12,7 @@ export default function Packages() {
                 alt: m.title
             } AS image,
             {
-                link: '/movies/'+ m.id,
+                link: '/movies/'+ m.movieId,
                 name: m.title,
                 /*
                 labels: [ (m)-[:IN_GENRE]->(g) | {
@@ -30,6 +30,13 @@ export default function Packages() {
                     icon: 'star',
                     //caption: 'avg rating',
                     number: m.imdbRating
+                },
+                {
+                    type: 'action',
+                    class: 'ui tiny right floated primary basic button',
+                    text: 'View',
+                    // icon: 'pencil',
+                    link: '/movies/'+ m.movieId
                 }
                 /*
                 ,
@@ -49,6 +56,6 @@ export default function Packages() {
     `
 
     return (
-        <CypherCards cypher={cypher} limit={4} columns={4} orderBy={['title', 'imdbRating']} />
+        <CypherCardGrid cypher={cypher} limit={12} columns={4} orderBy={['title', 'imdbRating']} />
     )
 }

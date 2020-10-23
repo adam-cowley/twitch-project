@@ -4,14 +4,13 @@ import SearchPagination from "../search/pagination";
 
 import { QueryForm } from "../search/query";
 
-
 export function useCypherSearch(cypher: string, limit: number = 12, orderByProperties?: string[]) {
     const [query, setQuery] = useState<string>('')
     const [orderBy, setOrderBy] = useState(orderByProperties?.length ? orderByProperties[0] : undefined);
     const [sort, /* setSort */] = useState('ASC');
     const [skip, setSkip] = useState(0);
 
-    const { loading, error, records, run } = useReadCypher(cypher, { query: '', limit: int(limit), skip: int(0), orderBy, sort })
+    const { loading, error, records, first, run } = useReadCypher(cypher, { query: '', limit: int(limit), skip: int(0), orderBy, sort })
 
     const goPrevious = () => {
         if ( skip > 0) setSkip( Math.max( skip - limit, 0) )
@@ -39,14 +38,15 @@ export function useCypherSearch(cypher: string, limit: number = 12, orderByPrope
     }, [ query, orderBy, skip ])
 
 
-    return {
-        query: QueryForm(query, setQuery),
-        pagination: SearchPagination({ limit, skip, orderByProperties, orderBy, records, handleChangeOrderBy, handleChangeSort, goPrevious, goNext  }),
 
+    return {
+        query: QueryForm(query, setQuery, loading),
+        pagination: SearchPagination({ limit, skip, orderByProperties, orderBy, records, handleChangeOrderBy, handleChangeSort, goPrevious, goNext  }),
 
         loading,
         error,
         records,
+        first,
         skip,
         limit,
 
@@ -58,7 +58,4 @@ export function useCypherSearch(cypher: string, limit: number = 12, orderByPrope
         handleChangeOrderBy,
         handleChangeSort,
     }
-
-
-
 }

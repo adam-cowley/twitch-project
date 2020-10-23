@@ -11,15 +11,10 @@ export default function CypherTable(props: CypherTableProps) {
     const {
         query,
         pagination,
-        loading,
         records,
         error,
         skip,
-        // goPrevious,
-        // goNext,
     } = useCypherSearch(props.cypher, props.limit)
-
-
 
     let results = <Loader />
 
@@ -32,10 +27,6 @@ export default function CypherTable(props: CypherTableProps) {
     else if (error) {
         results = <Message negative>{error.message}</Message>
     }
-    else if (loading) {
-        results = <Loader />
-    }
-
 
     return (<Container>
         {query}
