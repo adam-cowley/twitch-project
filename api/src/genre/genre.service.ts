@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/co
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { User } from '../user/user.entity';
 import { int } from 'neo4j-driver';
+import { STATUS_ACTIVE } from '../subscription/subscription.service';
 
 export interface Genre {
     id: number;
@@ -16,13 +17,13 @@ export class GenreService {
     async getGenresForUser(user: User): Promise<Genre[]> {
         const userId = user.getId()
         const res = await this.neo4jService.read(`
-            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
-            WHERE s.expiresAt >= datetime()
+            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PLAN]->(p)
+            WHERE s.expiresAt >= datetime() AND s.status = $status
 
             OPTIONAL MATCH  (p)-[:PROVIDES_ACCESS_TO]->(g)<-[:IN_GENRE]-(m)
             WHERE exists(m.poster)
 
-            WITH p, g, m ORDER BY g.name, m.imdbRating DESC
+            WITH p, g, m ORDER BY g.name, m.releaseDate DESC
 
             WITH p, g, collect(m) AS movies
             WITH p, g, movies[0] as topMovie
@@ -33,7 +34,7 @@ export class GenreService {
                 totalMovies: size((g)<-[:IN_GENRE]-()),
                 poster: topMovie.poster
             }) AS genres
-        `, { userId })
+        `, { userId, status: STATUS_ACTIVE })
 
         if ( res.records.length == 0 ) {
             throw new UnauthorizedException('You have no active subscriptions')
@@ -45,9 +46,9 @@ export class GenreService {
     async getGenreDetails(user: User, genreId: number) {
         const userId = user.getId()
         const res = await this.neo4jService.read(`
-            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p),
+            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PLAN]->(p),
                 (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
-            WHERE s.expiresAt >= datetime()
+            WHERE s.expiresAt >= datetime() AND s.status = $status
 
             WITH g, [ (g)<-[:IN_GENRE]-(m) WHERE ( u.dateOfBirth <= date() - duration('P18Y') OR NOT m:Adult ) | m ] AS movies
             WITH
@@ -76,6 +77,7 @@ export class GenreService {
         `, {
             userId,
             genreId: int(genreId),
+            status: STATUS_ACTIVE,
         })
 
         if ( res.records.length == 0 ) {
@@ -88,8 +90,8 @@ export class GenreService {
     async getMoviesForGenre(user: User, genreId: number, orderBy: string, limit: number, page: number) {
         const userId = user.getId()
         const res = await this.neo4jService.read(`
-            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PACKAGE]->(p)
-            WHERE s.expiresAt >= datetime()
+            MATCH (u:User {id: $userId})-[:PURCHASED]->(s)-[:FOR_PLAN]->(p)
+            WHERE s.expiresAt >= datetime() AND s.status = $status
 
             OPTIONAL MATCH (p)-[:PROVIDES_ACCESS_TO]->(g {id: $genreId})
 
@@ -108,6 +110,7 @@ export class GenreService {
             genreId: int(genreId),
             skip: int( (page-1) * limit ),
             limit: int(limit),
+            status: STATUS_ACTIVE,
         })
 
         if ( res.records.length == 0 ) {

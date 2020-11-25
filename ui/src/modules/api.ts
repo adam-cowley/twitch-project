@@ -1,5 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuth, AUTH_TOKEN } from './auth'
 
 
@@ -10,6 +11,7 @@ export const useApiWithAuth = (endpoint: string) => {
 }
 
 export const useApi = (endpoint: string, access_token?: string) => {
+  const router = useRouter()
   const api = axios.create({
     baseURL: 'http://localhost:3000/',
     headers: {
@@ -57,7 +59,24 @@ export const useApi = (endpoint: string, access_token?: string) => {
       .finally(() => loading.value = false)
   }
 
+  // @ts-ignore
+  const del = () => {
+    loading.value = true
+    error.value = undefined
+
+    return api.delete(endpoint)
+      .then(res => data.value = res.data)
+      .catch(e => {
+        error.value = e
+
+        throw e
+      })
+      .finally(() => loading.value = false)
+  }
+
   const errorMessage = computed(() => {
+    console.log('?? compute', error.value);
+
     if (error.value) {
       return error.value.message
     }
@@ -97,12 +116,20 @@ export const useApi = (endpoint: string, access_token?: string) => {
     return ['border-grey-600', 'bg-white', 'text-gray-900']
   }
 
+  watch([ error ], () => {
+    // If 401 Unauthorised, force user to buy a new subscription
+    if ( error.value.response.status === 401 && router ) {
+      router.push('/subscribe')
+    }
+  })
+
   return {
     loading,
     data,
     error,
     get,
     post,
+    del,
     errorMessage,
     errorDetails,
     errorFields,

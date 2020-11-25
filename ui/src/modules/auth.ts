@@ -5,6 +5,17 @@ import { useApi, useApiWithAuth } from './api'
 const AUTH_KEY = 'neoflix_token'
 export const AUTH_TOKEN = 'access_token'
 
+interface Plan {
+    id: number;
+    name: string;
+}
+interface Subscription {
+    id: string;
+    expiresAt: Date;
+    renewsAt: Date;
+    plan: Plan;
+}
+
 interface User {
     id: string;
     email: string;
@@ -12,6 +23,7 @@ interface User {
     firstName: string;
     lastName: string;
     [ AUTH_TOKEN ]: string;
+    subscription?: Subscription;
 }
 
 interface AuthState {

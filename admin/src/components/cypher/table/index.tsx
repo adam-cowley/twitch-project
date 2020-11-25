@@ -6,6 +6,8 @@ import CypherTableResults from './results'
 interface CypherTableProps {
     cypher: string; // MATCH (m:Movie) WHERE m.title CONTAINS $query RETURN m
     limit?: number;
+    showSearch?: boolean;
+    showPagination?: boolean;
 }
 export default function CypherTable(props: CypherTableProps) {
     const {
@@ -29,9 +31,9 @@ export default function CypherTable(props: CypherTableProps) {
     }
 
     return (<Container>
-        {query}
+        {(props.showSearch === undefined || props.showSearch) && query}
         {results}
-        {pagination}
+        {(props.showPagination === undefined || props.showPagination) && pagination}
     </Container>)
 
 }

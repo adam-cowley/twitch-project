@@ -4,6 +4,7 @@ import { Card, Segment, Grid, Icon, Header } from 'semantic-ui-react'
 import BarChart from '../components/charts/bar'
 import LineChart from '../components/charts/line'
 import CypherMetric from '../components/cypher/metric'
+import CypherTable from '../components/cypher/table'
 
 export default function Home() {
 
@@ -81,6 +82,19 @@ export default function Home() {
         RETURN years as labels, collect({label: label, borderColor: color, fill: 'transparent', data: data}) AS datasets
     `
 
+    const userCypher = `
+        MATCH (u:User)
+        WHERE exists(u.userId)
+        RETURN
+            { type: 'overview', link: '/users/'+ u.userId, name: u.name } as \`Latest Users\`,
+            { type: 'action', class: 'ui primary tiny basic button',
+            text: 'View',
+            //icon: 'user',
+            link: '/users/'+ u.userId } AS actionEdit
+
+        ORDER BY u.userId DESC LIMIT 5
+    `
+
     return (
         <Grid>
             <Grid.Row stretched>
@@ -94,6 +108,10 @@ export default function Home() {
                 <Grid.Column className="five wide">
                     <Segment>
                         <CypherMetric cypher='MATCH (a:User) RETURN count(a) AS count' text='Users' icon='users' color='red' />
+
+                        <div style={{marginBottom: 12}}></div>
+
+                        <CypherTable cypher={userCypher} showPagination={false} showSearch={false}></CypherTable>
                     </Segment>
 
                     <Segment>

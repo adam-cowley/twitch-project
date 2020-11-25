@@ -10570,10 +10570,10 @@ url@^0.11.0:
     punycode "1.3.2"
     querystring "0.2.0"
 
-use-neo4j@^0.2.21:
-  version "0.2.21"
-  resolved "https://registry.yarnpkg.com/use-neo4j/-/use-neo4j-0.2.21.tgz#dae6ffa13919679a056022483a1e222261a2abfc"
-  integrity sha512-YOjuswtSUjtZhl5HsbaBNvjSd+K4bz4NgVcl5i+U+U6SERucb39/mBOoSQrw0dLbp6XBdgjS+aKTBFeKKrDmRw==
+use-neo4j@^0.2.30:
+  version "0.2.30"
+  resolved "https://registry.yarnpkg.com/use-neo4j/-/use-neo4j-0.2.30.tgz#7fbef9aa54bf0abc550f6bb1785507d1ec5797f1"
+  integrity sha512-HYT3ywlFTIOv5lQUgWnzBkNa1MLVBabiFxee5THmwKOI1QfpDdF0bJBAubg74KZrBBG9Aefb5Yh6eeT7It7b3g==
   dependencies:
     "@testing-library/jest-dom" "^5.11.4"
     react-testing-library "^8.0.1"

@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { GenreModule } from './genre/genre.module';
+import { CheckoutModule } from './checkout/checkout.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { GenreModule } from './genre/genre.module';
     EncryptionModule,
     SubscriptionModule,
     GenreModule,
+    CheckoutModule,
   ],
   controllers: [AppController],
   providers: [AppService],

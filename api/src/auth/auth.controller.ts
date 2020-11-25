@@ -1,10 +1,10 @@
-import { Controller, Post, Body, UseGuards, Request, Get, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, UseInterceptors, UsePipes, ValidationPipe, Put, Delete, BadRequestException } from '@nestjs/common';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserService } from '../user/user.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthService } from './auth.service';
-import { SubscriptionService } from '../subscription/subscription.service';
+import { STATUS_ACTIVE, SubscriptionService } from '../subscription/subscription.service';
 import { Neo4jTransactionInterceptor } from '../neo4j/neo4j-transaction.interceptor';
 import { Transaction } from 'neo4j-driver';
 
@@ -32,7 +32,7 @@ export class AuthController {
             createUserDto.lastName
         )
 
-        await this.subscriptionService.createSubscription(transaction, user, 0)
+        await this.subscriptionService.createSubscription(transaction, user, 0, 7, STATUS_ACTIVE)
 
         const { access_token } = await this.authService.createToken(user)
 
@@ -63,5 +63,15 @@ export class AuthController {
             ...request.user.toJson(),
             access_token,
         }
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete('user/subscription')
+    async cancelSubscription(@Request() request) {
+        if ( !request.user.subscription ) throw new BadRequestException('No active subscriptions for this user')
+
+        await this.subscriptionService.cancelSubscription(request.user.subscription.id)
+
+        return true
     }
 }

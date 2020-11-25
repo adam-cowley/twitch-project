@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+    class="min-h-screen bg-gray-800 fixed z-50 inset-0 flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
   >
     <div class="max-w-md w-full bg-gray-900 px-8 py-16 rounded-lg">
       <div>
@@ -74,15 +74,14 @@
           </div>
 
           <!-- <div class="text-sm leading-5">
-            <a
-              href="#"
+            <router-link
+              to="/register"
               class="font-medium text-red-600 hover:text-red-500 focus:outline-none focus:underline transition ease-in-out duration-150"
             >
-              Forgot your password?
-            </a>
+              Don't have an account?
+            </router-link>
           </div> -->
         </div>
-
         <div class="mt-6">
           <button
             type="submit"
@@ -104,6 +103,17 @@
             </span>
             Sign in
           </button>
+        </div>
+        <div class="mt-6">
+          <p class="mt-2 text-center text-sm leading-5 text-gray-500">
+            Don't have an account?
+            <router-link
+              to="/register"
+              class="font-medium text-red-600 hover:text-red-500 focus:outline-none focus:underline transition ease-in-out duration-150"
+            >
+              Register now.
+            </router-link>
+          </p>
         </div>
       </form>
     </div>
@@ -141,8 +151,8 @@ export default defineComponent({
 
     const payload = reactive<LoginPayload>({
       email: "adam@neo4j.com",
-      password: "letmein",
-      rememberMe: false,
+      password: "password",
+      rememberMe: true,
     });
 
     const submit = () => {
@@ -163,5 +173,3 @@ export default defineComponent({
 });
 </script>
 
-<style>
-</style>

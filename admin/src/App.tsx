@@ -21,10 +21,10 @@ function App() {
       <Router>
         <Menu inverted pointing fixed="top" style={{ padding: '1em 0'}}>
           <Container>
-          <Menu.Item as={Link} to="/" style={{padding: '0 1em 0 0'}}><img src={logo} alt="Neoflix" style={{width: '6em'}} /></Menu.Item>
-          <Menu.Item as={Link} to="/movies">Movies</Menu.Item>
-          <Menu.Item as={Link} to="/genres">Genres</Menu.Item>
-          <Menu.Item as={Link} to="/packages">Packages</Menu.Item>
+            <Menu.Item as={Link} to="/" style={{padding: '0 1em 0 0'}}><img src={logo} alt="Neoflix" style={{width: '6em'}} /></Menu.Item>
+            <Menu.Item as={Link} to="/movies">Movies</Menu.Item>
+            <Menu.Item as={Link} to="/genres">Genres</Menu.Item>
+            <Menu.Item as={Link} to="/packages">Packages</Menu.Item>
           </Container>
         </Menu>
         <main className="ui main container">

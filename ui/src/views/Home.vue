@@ -1,8 +1,14 @@
 <template>
-  <div class="home container m-auto">
+  <div class="home">
     <loading v-if="loading" />
 
-    <div v-else>
+    <template v-else>
+      <div v-if="subscription?.plan.id === 0" class="bg-red-800 p-4 text-xs font-bold rounded-md flex flex-row">
+        <div class="flex-grow flex flex-col justify-center">
+        Your free trial expires on {{ subscription.expiresAt.split('T')[0]}}
+        </div>
+        <router-link to="/subscribe" class="bg-red-600 rounded-md px-2 py-2">Upgrade Now</router-link>
+      </div>
 
     <div><h1 class="p-2 mt-4 font-bold text-xl">Genres</h1></div>
     <div class="flex flex-wrap">
@@ -14,7 +20,7 @@
         :stats="{ count: genre.totalMovies }"
       />
     </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -24,15 +30,17 @@ import { defineComponent } from "vue";
 import Poster from "../components/Poster.vue";
 
 import { useApi, useApiWithAuth } from "../modules/api";
+import { useAuth } from "../modules/auth";
 
 export default defineComponent({
   components: { Poster },
   setup() {
+    const { user } = useAuth()
     const { loading, data, error, get } = useApiWithAuth("/genres");
 
     get();
 
-    return { loading, data };
+    return { loading, data, subscription: user?.value?.subscription };
   },
 });
 </script>

@@ -13,12 +13,11 @@ import { Neo4jProvider,
 const driver = createDriver('neo4j', 'localhost', 7687, 'neo4j', 'neo')
 
 ReactDOM.render(
-  // <React.StrictMode>
+  <React.StrictMode>
     <Neo4jProvider driver={driver}>
       <App />
     </Neo4jProvider>
-
-  // </React.StrictMode>
+  </React.StrictMode>
   ,
   document.getElementById('root')
 );

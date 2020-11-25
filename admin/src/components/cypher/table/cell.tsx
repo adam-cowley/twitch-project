@@ -17,13 +17,13 @@ function CypherTableOverview({ key, value }) {
     return (
         <Table.Cell key={key}>
             <Link to={value.link}>
-                <Icon circular inverted color='teal' name={value.icon} size='large' style={{float: 'left', marginRight: '6px'}} />
+                {value.icon && <Icon circular inverted color='teal' name={value.icon} size='large' style={{float: 'left', marginRight: '6px'}} />}
 
                 <Header style={{marginTop: 0, marginBottom: 0}}>{value.name}</Header>
-                <Header.Subheader>
+                {value.caption && <Header.Subheader>
                     <Icon name={value.caption.icon} />
                     {value.caption.text}
-                </Header.Subheader>
+                </Header.Subheader>}
             </Link>
         </Table.Cell>
     )

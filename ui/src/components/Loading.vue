@@ -21,9 +21,6 @@ export default defineComponent({
 </script>
 
 <style>
-body {
-  @apply bg-gray-800 text-white;
-}
 .loading .spinner {
   border-top-color: theme('colors.red.700');
 }

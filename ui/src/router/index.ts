@@ -37,9 +37,23 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/genres',
+    name: 'genres.list',
+    // component: () => import(/* webpackChunkName: "genres.view" */ '../views/genres/List.vue'),
+    component: Home,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/genres/:id',
     name: 'genres.view',
     component: () => import(/* webpackChunkName: "genres.view" */ '../views/genres/View.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/movies/',
+    name: 'movies.list',
+    // component: () => import(/* webpackChunkName: "movies.view" */ '../views/movies/Home.vue'),
+    component: Home,
     meta: { requiresAuth: true },
   },
   {
@@ -47,6 +61,27 @@ const routes = [
     name: 'movies.view',
     component: () => import(/* webpackChunkName: "movies.view" */ '../views/movies/View.vue'),
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/subscribe',
+    name: 'subscribe',
+    component: () => import(/* webpackChunkName: "subscribe" */ '../views/Subscribe.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/subscribe/success',
+    name: 'subscribe.success',
+    component: () => import(/* webpackChunkName: "subscribe.success" */ '../views/SubscribeSuccess.vue'),
+  },
+  {
+    path: '/subscribe/cancelled',
+    name: 'subscribe.cancelled',
+    component: () => import(/* webpackChunkName: "subscribe.cancelled" */ '../views/SubscribeCancelled.vue'),
+  },
+  {
+    path: '/account',
+    name: 'account',
+    component: () => import(/* webpackChunkName: "account" */ '../views/Account.vue'),
   },
   {
     path: '/*',
@@ -60,13 +95,28 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const { user } = useAuth()
+  const { authenticating, user } = useAuth()
+
 
   // Not logged into a guarded route?
-  if ( to.meta.requiresAuth && !user?.value ) next({ name: 'login' })
+  if ( authenticating.value === false && to.meta.requiresAuth === true && !user?.value ) {
+    console.log('requires auth, redirect to login');
+
+    next({ name: 'login' })
+  }
+
+  // Redirect user to route if they don't have the correct subscription
+  // else if ( to.meta.requiresAuth === true && !user?.value?.subscription  && to.name!.toString().startsWith('subscribe') === false ) {
+  //   console.log('requires valid subscription, redirect to subscribe');
+  //   next({ name: 'subscribe' })
+  // }
 
   // Logged in for an auth route
-  else if ( (to.name == 'login' || to.name == 'register') && user!.value ) next({ name: 'home' })
+  // else if ( (to.name == 'login' || to.name == 'register') && user!.value ) {
+  //   console.log('login or register, has a user so send home');
+
+  //   next({ name: 'home' })
+  // }
 
   // Carry On...
   else next()

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 text-gray-100"
+    class="min-h-screen bg-gray-800 fixed inset-0 z-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 text-gray-100"
   >
     <div class="max-w-md w-full bg-gray-900 px-8 py-16 rounded-lg">
       <div>
@@ -95,7 +95,6 @@
             Already have an account?
             <router-link
               to="/login"
-              href="#"
               class="font-medium text-red-600 hover:text-red-500 focus:outline-none focus:underline transition ease-in-out duration-150"
             >
               Login in now.
@@ -125,9 +124,9 @@ import { useAuth } from "../modules/auth"
 import FormValidation from '../components/FormValidation'
 
 interface RegisterPayload {
-  email: string;
-  password: string;
-  dateOfBirth: Date;
+  email?: string;
+  password?: string;
+  dateOfBirth?: Date;
   firstName?: string;
   lastName?: string;
 }
@@ -136,9 +135,9 @@ export default defineComponent({
   components: { FormValidation, },
   setup() {
     const payload = reactive<RegisterPayload>({
-      email: Math.random()+'@adamcowley.co.uk',// undefined,
-      password: 'letmein', // undefined,
-      dateOfBirth: new Date('1920-01-01'), // undefined,
+      email: undefined,
+      password: undefined,
+      dateOfBirth: undefined,
       firstName: undefined,
       lastName: undefined,
     });
