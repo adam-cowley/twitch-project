@@ -54,7 +54,7 @@ configService.get<string>('NEO4J_USERNAME') // neo
 
 Because the config is now coming from another service rather than static variables, we'll also need to tweak the constructor.
 
-For this, we'll create a new static `forRootAsync` method on the `AppModule`.  This will take a single argument, an object, which will be used to pass a dynamic provider that will use the `useFactory` option to get the environment variables from the `ConfigService` and register it as `NEO4J_CONFIG` ready to be injected.
+For this, we'll create a new static `forRootAsync` method on the `Neo4jModule`.  This will take a single argument, an object, which will be used to pass a dynamic provider that will use the `useFactory` option to get the environment variables from the `ConfigService` and register it as `NEO4J_CONFIG` ready to be injected.
 
 This a bit of a hack but it seems to work.
 
