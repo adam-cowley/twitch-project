@@ -9,7 +9,7 @@
   "dependencies": {
     "axios": "^0.20.0",
     "core-js": "^3.6.5",
-    "postcss": "^8.0.9",
+    "postcss": "^8.2.10",
     "stripe": "^8.125.0",
     "tailwindcss": "^1.8.10",
     "vue": "^3.0.2",
