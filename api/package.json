@@ -33,7 +33,7 @@
     "bcrypt": "^5.0.0",
     "class-transformer": "^0.2.3",
     "class-validator": "^0.12.2",
-    "moment": "^2.27.0",
+    "moment": "^2.29.2",
     "neo4j-driver": "^4.1.1",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
