@@ -1,7 +1,12 @@
-![Neoflix](./ui/src/assets/neoflix-logo.png)
+# Twitch Streams
+
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+**Note: This repository is outdated.  For more information on building apps on top of Neo4j, check out [the Developer path on Neo4j GraphAcademy](https://graphacademy.neo4j.com/categories/developer/).**
 
 
-A set of projects written in Node.js, TypeScript, or JavaScript for a fictional Online Streaming Service **Neoflix**.   All of these projects have been created during my weekly Livestream session, **Tuesdays at 13:00 UK time/14:00 Central Europe** on the [Neo4j Twitch Channel](https://twitch.tv/neo4j) and [Neo4j YouTube Channel](https://youtube.com/neo4j).
+
+A set of projects written in Node.js, TypeScript, or JavaScript for a fictional Online Streaming Service **Neoflix**.   All of these projects have been created during weekly Livestream session on the [Neo4j Twitch Channel](https://twitch.tv/neo4j) and [Neo4j YouTube Channel](https://youtube.com/neo4j).
 
 You can watch the videos back on Youtube in the [Building Web Applications with Neo4j, Nest.js, and Typescript playlist](https://www.youtube.com/playlist?list=PL9Hl4pk2FsvX-Y5-phtnqY4hJaWeocOkq).  Writes up for many of the elements contained in this repository are also available on the [Neo4j Developer Blog](https://medium.com/neo4j).
 
