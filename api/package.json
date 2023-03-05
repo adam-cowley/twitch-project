@@ -44,7 +44,7 @@
     "stripe": "^8.125.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^7.0.0",
+    "@nestjs/cli": "^9.2.0",
     "@nestjs/schematics": "^7.0.0",
     "@nestjs/testing": "^7.3.2",
     "@types/express": "^4.17.3",
